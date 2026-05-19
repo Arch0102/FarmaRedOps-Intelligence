@@ -1,4 +1,8 @@
 package com.farmared.opsintelligence.entity.enums;
 
-public class EstadoLote {
+public enum EstadoLote {
+    ACTIVO,
+    AGOTADO,
+    VENCIDO,
+    BLOQUEADO
 }

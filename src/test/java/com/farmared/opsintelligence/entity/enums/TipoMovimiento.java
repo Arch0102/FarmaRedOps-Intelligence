@@ -1,4 +1,8 @@
 package com.farmared.opsintelligence.entity.enums;
 
-public class TipoMovimiento {
+public enum TipoMovimiento {
+    ENTRADA,
+    SALIDA,
+    AJUSTE_POSITIVO,
+    AJUSTE_NEGATIVO
 }

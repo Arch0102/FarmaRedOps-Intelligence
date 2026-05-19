@@ -1,4 +1,13 @@
 package com.farmared.opsintelligence.repository;
 
-public class CategoriaMedicamentoRepository {
+import com.farmared.opsintelligence.entity.CategoriaMedicamento;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface CategoriaMedicamentoRepository extends JpaRepository<CategoriaMedicamento, Long> {
+
+    Optional<CategoriaMedicamento> findByNombreIgnoreCase(String nombre);
+
+    boolean existsByNombreIgnoreCase(String nombre);
 }

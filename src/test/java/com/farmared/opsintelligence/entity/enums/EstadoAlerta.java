@@ -1,4 +1,7 @@
 package com.farmared.opsintelligence.entity.enums;
 
-public class EstadoAlerta {
+public enum EstadoAlerta {
+    PENDIENTE,
+    RESUELTA,
+    IGNORADA
 }
