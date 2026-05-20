@@ -62,4 +62,13 @@ public class Medicamento extends BaseEntity {
 
     @OneToMany(mappedBy = "medicamento")
     private List<AlertaStock> alertasStock = new ArrayList<>();
+
+    @OneToMany(mappedBy = "medicamento")
+    private List<MedicamentoProveedor> medicamentosProveedor = new ArrayList<>();
+
+    @OneToMany(mappedBy = "medicamento")
+    private List<DetalleOrden> detallesOrden = new ArrayList<>();
+
+    @OneToMany(mappedBy = "medicamento")
+    private List<DashboardMetrica> metricasDashboard = new ArrayList<>();
 }

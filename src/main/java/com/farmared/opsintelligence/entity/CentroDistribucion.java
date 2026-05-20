@@ -37,4 +37,7 @@ public class CentroDistribucion extends BaseEntity {
 
     @OneToMany(mappedBy = "centroDistribucion")
     private List<AlertaStock> alertasStock = new ArrayList<>();
+
+    @OneToMany(mappedBy = "centroDistribucion")
+    private List<DashboardMetrica> metricasDashboard = new ArrayList<>();
 }

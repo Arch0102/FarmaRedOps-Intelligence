@@ -1,7 +1,7 @@
 package com.farmared.opsintelligence.entity;
 
 import com.farmared.opsintelligence.entity.enums.EstadoAlerta;
-import com.farmared.opsintelligence.entity.enums.TipoAlerta;
+import enums.TipoAlerta;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
