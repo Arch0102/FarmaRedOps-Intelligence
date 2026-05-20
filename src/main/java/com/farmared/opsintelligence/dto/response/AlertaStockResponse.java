@@ -1,7 +1,7 @@
 package com.farmared.opsintelligence.dto.response;
 
 import com.farmared.opsintelligence.entity.enums.EstadoAlerta;
-import com.farmared.opsintelligence.entity.enums.TipoAlerta;
+import enums.TipoAlerta;
 
 import java.time.LocalDateTime;
 

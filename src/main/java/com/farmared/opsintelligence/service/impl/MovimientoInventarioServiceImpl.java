@@ -8,7 +8,7 @@ import com.farmared.opsintelligence.entity.LoteMedicamento;
 import com.farmared.opsintelligence.entity.MovimientoInventario;
 import com.farmared.opsintelligence.entity.enums.EstadoAlerta;
 import com.farmared.opsintelligence.entity.enums.EstadoLote;
-import com.farmared.opsintelligence.entity.enums.TipoAlerta;
+import enums.TipoAlerta;
 import com.farmared.opsintelligence.entity.enums.TipoMovimiento;
 import com.farmared.opsintelligence.exception.BusinessRuleException;
 import com.farmared.opsintelligence.exception.ResourceNotFoundException;
