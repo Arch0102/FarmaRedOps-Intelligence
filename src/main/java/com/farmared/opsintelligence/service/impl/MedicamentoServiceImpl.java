@@ -7,6 +7,7 @@ import com.farmared.opsintelligence.entity.Medicamento;
 import com.farmared.opsintelligence.exception.BadRequestException;
 import com.farmared.opsintelligence.exception.DuplicateResourceException;
 import com.farmared.opsintelligence.exception.ResourceNotFoundException;
+import com.farmared.opsintelligence.mapper.MedicamentoMapper;
 import com.farmared.opsintelligence.repository.CategoriaMedicamentoRepository;
 import com.farmared.opsintelligence.repository.MedicamentoRepository;
 import com.farmared.opsintelligence.service.MedicamentoService;
@@ -23,13 +24,14 @@ public class MedicamentoServiceImpl implements MedicamentoService {
 
     private final MedicamentoRepository medicamentoRepository;
     private final CategoriaMedicamentoRepository categoriaMedicamentoRepository;
+    private final MedicamentoMapper medicamentoMapper;
 
     @Override
     @Transactional(readOnly = true)
     public List<MedicamentoResponse> listar() {
         return medicamentoRepository.findAll()
                 .stream()
-                .map(this::mapToResponse)
+                .map(medicamentoMapper::toResponse)
                 .toList();
     }
 
@@ -37,7 +39,7 @@ public class MedicamentoServiceImpl implements MedicamentoService {
     @Transactional(readOnly = true)
     public MedicamentoResponse consultarPorId(Long id) {
         Medicamento medicamento = buscarMedicamentoPorId(id);
-        return mapToResponse(medicamento);
+        return medicamentoMapper.toResponse(medicamento);
     }
 
     @Override
@@ -50,23 +52,15 @@ public class MedicamentoServiceImpl implements MedicamentoService {
 
         CategoriaMedicamento categoria = buscarCategoriaPorId(request.categoriaMedicamentoId());
 
-        Medicamento medicamento = new Medicamento();
-        medicamento.setCodigo(request.codigo());
-        medicamento.setNombre(request.nombre());
-        medicamento.setDescripcion(request.descripcion());
-        medicamento.setPrincipioActivo(request.principioActivo());
-        medicamento.setConcentracion(request.concentracion());
-        medicamento.setPresentacion(request.presentacion());
-        medicamento.setUnidadMedida(request.unidadMedida());
-        medicamento.setStockMinimo(request.stockMinimo());
-        medicamento.setStockMaximo(request.stockMaximo());
-        medicamento.setPuntoReorden(request.puntoReorden());
-        medicamento.setActivo(request.activo() != null ? request.activo() : true);
+        Medicamento medicamento = medicamentoMapper.toEntity(request);
         medicamento.setCategoriaMedicamento(categoria);
+        if (medicamento.getActivo() == null) {
+            medicamento.setActivo(true);
+        }
 
         Medicamento medicamentoGuardado = medicamentoRepository.save(medicamento);
 
-        return mapToResponse(medicamentoGuardado);
+        return medicamentoMapper.toResponse(medicamentoGuardado);
     }
 
     @Override
@@ -101,7 +95,7 @@ public class MedicamentoServiceImpl implements MedicamentoService {
 
         Medicamento medicamentoActualizado = medicamentoRepository.save(medicamento);
 
-        return mapToResponse(medicamentoActualizado);
+        return medicamentoMapper.toResponse(medicamentoActualizado);
     }
 
     @Override
@@ -133,24 +127,4 @@ public class MedicamentoServiceImpl implements MedicamentoService {
         }
     }
 
-    private MedicamentoResponse mapToResponse(Medicamento medicamento) {
-        return new MedicamentoResponse(
-                medicamento.getId(),
-                medicamento.getCodigo(),
-                medicamento.getNombre(),
-                medicamento.getDescripcion(),
-                medicamento.getPrincipioActivo(),
-                medicamento.getConcentracion(),
-                medicamento.getPresentacion(),
-                medicamento.getUnidadMedida(),
-                medicamento.getStockMinimo(),
-                medicamento.getStockMaximo(),
-                medicamento.getPuntoReorden(),
-                medicamento.getActivo(),
-                medicamento.getCategoriaMedicamento().getId(),
-                medicamento.getCategoriaMedicamento().getNombre(),
-                medicamento.getCreatedAt(),
-                medicamento.getUpdatedAt()
-        );
-    }
 }

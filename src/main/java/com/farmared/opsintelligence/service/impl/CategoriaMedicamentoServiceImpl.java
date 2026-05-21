@@ -5,6 +5,7 @@ import com.farmared.opsintelligence.dto.response.CategoriaMedicamentoResponse;
 import com.farmared.opsintelligence.entity.CategoriaMedicamento;
 import com.farmared.opsintelligence.exception.DuplicateResourceException;
 import com.farmared.opsintelligence.exception.ResourceNotFoundException;
+import com.farmared.opsintelligence.mapper.CategoriaMedicamentoMapper;
 import com.farmared.opsintelligence.repository.CategoriaMedicamentoRepository;
 import com.farmared.opsintelligence.service.CategoriaMedicamentoService;
 import lombok.RequiredArgsConstructor;
@@ -19,13 +20,14 @@ import java.util.List;
 public class CategoriaMedicamentoServiceImpl implements CategoriaMedicamentoService {
 
     private final CategoriaMedicamentoRepository categoriaMedicamentoRepository;
+    private final CategoriaMedicamentoMapper categoriaMedicamentoMapper;
 
     @Override
     @Transactional(readOnly = true)
     public List<CategoriaMedicamentoResponse> listar() {
         return categoriaMedicamentoRepository.findAll()
                 .stream()
-                .map(this::mapToResponse)
+                .map(categoriaMedicamentoMapper::toResponse)
                 .toList();
     }
 
@@ -33,7 +35,7 @@ public class CategoriaMedicamentoServiceImpl implements CategoriaMedicamentoServ
     @Transactional(readOnly = true)
     public CategoriaMedicamentoResponse consultarPorId(Long id) {
         CategoriaMedicamento categoria = buscarCategoriaPorId(id);
-        return mapToResponse(categoria);
+        return categoriaMedicamentoMapper.toResponse(categoria);
     }
 
     @Override
@@ -42,14 +44,14 @@ public class CategoriaMedicamentoServiceImpl implements CategoriaMedicamentoServ
             throw new DuplicateResourceException("Ya existe una categoría con el nombre: " + request.nombre());
         }
 
-        CategoriaMedicamento categoria = new CategoriaMedicamento();
-        categoria.setNombre(request.nombre());
-        categoria.setDescripcion(request.descripcion());
-        categoria.setActivo(request.activo() != null ? request.activo() : true);
+        CategoriaMedicamento categoria = categoriaMedicamentoMapper.toEntity(request);
+        if (categoria.getActivo() == null) {
+            categoria.setActivo(true);
+        }
 
         CategoriaMedicamento categoriaGuardada = categoriaMedicamentoRepository.save(categoria);
 
-        return mapToResponse(categoriaGuardada);
+        return categoriaMedicamentoMapper.toResponse(categoriaGuardada);
     }
 
     @Override
@@ -71,7 +73,7 @@ public class CategoriaMedicamentoServiceImpl implements CategoriaMedicamentoServ
 
         CategoriaMedicamento categoriaActualizada = categoriaMedicamentoRepository.save(categoria);
 
-        return mapToResponse(categoriaActualizada);
+        return categoriaMedicamentoMapper.toResponse(categoriaActualizada);
     }
 
     @Override
@@ -88,14 +90,4 @@ public class CategoriaMedicamentoServiceImpl implements CategoriaMedicamentoServ
                 .orElseThrow(() -> new ResourceNotFoundException("Categoría de medicamento no encontrada con id: " + id));
     }
 
-    private CategoriaMedicamentoResponse mapToResponse(CategoriaMedicamento categoria) {
-        return new CategoriaMedicamentoResponse(
-                categoria.getId(),
-                categoria.getNombre(),
-                categoria.getDescripcion(),
-                categoria.getActivo(),
-                categoria.getCreatedAt(),
-                categoria.getUpdatedAt()
-        );
-    }
 }

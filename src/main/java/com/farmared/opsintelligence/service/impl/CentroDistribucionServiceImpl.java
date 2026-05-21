@@ -5,6 +5,7 @@ import com.farmared.opsintelligence.dto.response.CentroDistribucionResponse;
 import com.farmared.opsintelligence.entity.CentroDistribucion;
 import com.farmared.opsintelligence.exception.DuplicateResourceException;
 import com.farmared.opsintelligence.exception.ResourceNotFoundException;
+import com.farmared.opsintelligence.mapper.CentroDistribucionMapper;
 import com.farmared.opsintelligence.repository.CentroDistribucionRepository;
 import com.farmared.opsintelligence.service.CentroDistribucionService;
 import lombok.RequiredArgsConstructor;
@@ -19,13 +20,14 @@ import java.util.List;
 public class CentroDistribucionServiceImpl implements CentroDistribucionService {
 
     private final CentroDistribucionRepository centroDistribucionRepository;
+    private final CentroDistribucionMapper centroDistribucionMapper;
 
     @Override
     @Transactional(readOnly = true)
     public List<CentroDistribucionResponse> listar() {
         return centroDistribucionRepository.findAll()
                 .stream()
-                .map(this::mapToResponse)
+                .map(centroDistribucionMapper::toResponse)
                 .toList();
     }
 
@@ -33,7 +35,7 @@ public class CentroDistribucionServiceImpl implements CentroDistribucionService 
     @Transactional(readOnly = true)
     public CentroDistribucionResponse consultarPorId(Long id) {
         CentroDistribucion centro = buscarCentroPorId(id);
-        return mapToResponse(centro);
+        return centroDistribucionMapper.toResponse(centro);
     }
 
     @Override
@@ -42,16 +44,14 @@ public class CentroDistribucionServiceImpl implements CentroDistribucionService 
             throw new DuplicateResourceException("Ya existe un centro de distribución con el código: " + request.codigo());
         }
 
-        CentroDistribucion centro = new CentroDistribucion();
-        centro.setCodigo(request.codigo());
-        centro.setNombre(request.nombre());
-        centro.setDireccion(request.direccion());
-        centro.setCiudad(request.ciudad());
-        centro.setActivo(request.activo() != null ? request.activo() : true);
+        CentroDistribucion centro = centroDistribucionMapper.toEntity(request);
+        if (centro.getActivo() == null) {
+            centro.setActivo(true);
+        }
 
         CentroDistribucion centroGuardado = centroDistribucionRepository.save(centro);
 
-        return mapToResponse(centroGuardado);
+        return centroDistribucionMapper.toResponse(centroGuardado);
     }
 
     @Override
@@ -75,7 +75,7 @@ public class CentroDistribucionServiceImpl implements CentroDistribucionService 
 
         CentroDistribucion centroActualizado = centroDistribucionRepository.save(centro);
 
-        return mapToResponse(centroActualizado);
+        return centroDistribucionMapper.toResponse(centroActualizado);
     }
 
     @Override
@@ -92,16 +92,4 @@ public class CentroDistribucionServiceImpl implements CentroDistribucionService 
                 .orElseThrow(() -> new ResourceNotFoundException("Centro de distribución no encontrado con id: " + id));
     }
 
-    private CentroDistribucionResponse mapToResponse(CentroDistribucion centro) {
-        return new CentroDistribucionResponse(
-                centro.getId(),
-                centro.getCodigo(),
-                centro.getNombre(),
-                centro.getDireccion(),
-                centro.getCiudad(),
-                centro.getActivo(),
-                centro.getCreatedAt(),
-                centro.getUpdatedAt()
-        );
-    }
 }
