@@ -689,4 +689,3 @@ El proyecto cuenta actualmente con:
 - Documentación de pruebas.
 - Trabajo colaborativo con Git y Pull Requests.
 
-Esto permite sustentar una base backend sólida y preparada para continuar con los siguientes módulos del sistema.
