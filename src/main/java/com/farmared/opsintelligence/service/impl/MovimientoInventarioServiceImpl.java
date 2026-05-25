@@ -12,6 +12,7 @@ import com.farmared.opsintelligence.entity.enums.TipoAlerta;
 import com.farmared.opsintelligence.entity.enums.TipoMovimiento;
 import com.farmared.opsintelligence.exception.BusinessRuleException;
 import com.farmared.opsintelligence.exception.ResourceNotFoundException;
+import com.farmared.opsintelligence.mapper.MovimientoInventarioMapper;
 import com.farmared.opsintelligence.repository.AlertaStockRepository;
 import com.farmared.opsintelligence.repository.InventarioRepository;
 import com.farmared.opsintelligence.repository.LoteMedicamentoRepository;
@@ -34,6 +35,7 @@ public class MovimientoInventarioServiceImpl implements MovimientoInventarioServ
     private final LoteMedicamentoRepository loteMedicamentoRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
     private final AlertaStockRepository alertaStockRepository;
+    private final MovimientoInventarioMapper movimientoInventarioMapper;
 
     @Override
     public MovimientoInventarioResponse registrarMovimiento(MovimientoInventarioRequest request) {
@@ -70,7 +72,7 @@ public class MovimientoInventarioServiceImpl implements MovimientoInventarioServ
 
         generarAlertaStockCriticoSiAplica(inventario);
 
-        return toMovimientoResponse(movimientoGuardado);
+        return movimientoInventarioMapper.toResponse(movimientoGuardado);
     }
 
     @Override
@@ -79,7 +81,7 @@ public class MovimientoInventarioServiceImpl implements MovimientoInventarioServ
         MovimientoInventario movimiento = movimientoInventarioRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Movimiento de inventario no encontrado con ID: " + id));
 
-        return toMovimientoResponse(movimiento);
+        return movimientoInventarioMapper.toResponse(movimiento);
     }
 
     @Override
@@ -91,7 +93,7 @@ public class MovimientoInventarioServiceImpl implements MovimientoInventarioServ
 
         return movimientoInventarioRepository.findByInventarioIdOrderByFechaMovimientoDesc(inventarioId)
                 .stream()
-                .map(this::toMovimientoResponse)
+                .map(movimientoInventarioMapper::toResponse)
                 .toList();
     }
 
@@ -218,31 +220,4 @@ public class MovimientoInventarioServiceImpl implements MovimientoInventarioServ
         alertaStockRepository.save(alerta);
     }
 
-    private MovimientoInventarioResponse toMovimientoResponse(MovimientoInventario movimiento) {
-        Inventario inventario = movimiento.getInventario();
-        LoteMedicamento lote = movimiento.getLoteMedicamento();
-
-        return new MovimientoInventarioResponse(
-                movimiento.getId(),
-                movimiento.getTipoMovimiento(),
-                movimiento.getCantidad(),
-                movimiento.getStockAntes(),
-                movimiento.getStockDespues(),
-                movimiento.getMotivo(),
-                movimiento.getObservacion(),
-                movimiento.getUsuarioResponsable(),
-                movimiento.getFechaMovimiento(),
-
-                inventario.getId(),
-                inventario.getMedicamento().getId(),
-                inventario.getMedicamento().getCodigo(),
-                inventario.getMedicamento().getNombre(),
-
-                lote.getId(),
-                lote.getNumeroLote(),
-
-                inventario.getCentroDistribucion().getId(),
-                inventario.getCentroDistribucion().getNombre()
-        );
-    }
 }

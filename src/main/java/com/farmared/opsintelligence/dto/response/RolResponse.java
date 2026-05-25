@@ -2,9 +2,8 @@ package com.farmared.opsintelligence.dto.response;
 
 import java.time.LocalDateTime;
 
-public record CategoriaMedicamentoResponse(
+public record RolResponse(
         Long id,
-        String codigo,
         String nombre,
         String descripcion,
         Boolean activo,

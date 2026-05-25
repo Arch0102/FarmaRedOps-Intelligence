@@ -1,9 +1,15 @@
 package com.farmared.opsintelligence.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.farmared.opsintelligence.dto.response.ApiResponse;
 import com.farmared.opsintelligence.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -17,12 +23,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.io.IOException;
+import java.util.Map;
+
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserDetailsService userDetailsService;
+    private final ObjectMapper objectMapper;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -31,8 +41,74 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) ->
+                                writeSecurityError(
+                                        response,
+                                        HttpStatus.UNAUTHORIZED,
+                                        "No autorizado",
+                                        request.getRequestURI(),
+                                        authException.getMessage()
+                                )
+                        )
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                writeSecurityError(
+                                        response,
+                                        HttpStatus.FORBIDDEN,
+                                        "Acceso denegado",
+                                        request.getRequestURI(),
+                                        accessDeniedException.getMessage()
+                                )
+                        )
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
+
+                        .requestMatchers(HttpMethod.POST, "/api/v1/movimientos-inventario/**")
+                        .hasAnyRole("AUXILIAR_BODEGA", "ADMIN_AUDITOR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/movimientos-inventario/**")
+                        .hasAnyRole("AUXILIAR_BODEGA", "ANALISTA_COMPRAS", "ADMIN_AUDITOR")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/medicamentos/**")
+                        .hasAnyRole("AUXILIAR_BODEGA", "ANALISTA_COMPRAS", "ADMIN_AUDITOR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/medicamentos/**")
+                        .hasRole("ADMIN_AUDITOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/medicamentos/**")
+                        .hasRole("ADMIN_AUDITOR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/medicamentos/**")
+                        .hasRole("ADMIN_AUDITOR")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/categorias-medicamento/**")
+                        .hasAnyRole("AUXILIAR_BODEGA", "ANALISTA_COMPRAS", "ADMIN_AUDITOR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/categorias-medicamento/**")
+                        .hasRole("ADMIN_AUDITOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/categorias-medicamento/**")
+                        .hasRole("ADMIN_AUDITOR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/categorias-medicamento/**")
+                        .hasRole("ADMIN_AUDITOR")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/centros-distribucion/**")
+                        .hasAnyRole("AUXILIAR_BODEGA", "ANALISTA_COMPRAS", "ADMIN_AUDITOR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/centros-distribucion/**")
+                        .hasRole("ADMIN_AUDITOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/centros-distribucion/**")
+                        .hasRole("ADMIN_AUDITOR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/centros-distribucion/**")
+                        .hasRole("ADMIN_AUDITOR")
+
+                        .requestMatchers("/api/v1/proveedores/**")
+                        .hasAnyRole("ANALISTA_COMPRAS", "ADMIN_AUDITOR")
+                        .requestMatchers("/api/v1/ordenes-compra/**")
+                        .hasAnyRole("ANALISTA_COMPRAS", "ADMIN_AUDITOR")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/dashboard/**")
+                        .hasAnyRole("ANALISTA_COMPRAS", "ADMIN_AUDITOR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/dashboard/**")
+                        .hasRole("ADMIN_AUDITOR")
+
+                        .requestMatchers("/api/v1/usuarios/**")
+                        .hasRole("ADMIN_AUDITOR")
+
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
@@ -56,5 +132,20 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    private void writeSecurityError(
+            HttpServletResponse response,
+            HttpStatus status,
+            String message,
+            String path,
+            String error
+    ) throws IOException {
+        response.setStatus(status.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        objectMapper.writeValue(
+                response.getWriter(),
+                ApiResponse.error(status, message, path, Map.of("error", error))
+        );
     }
 }

@@ -45,11 +45,11 @@ public class AuthServiceImpl implements AuthService {
             throw new DuplicateResourceException("El email ya está registrado");
         }
 
-        Rol rolUser = rolRepository.findByNombre("USER")
+        Rol rolUser = rolRepository.findByNombre("ROLE_AUXILIAR_BODEGA")
                 .orElseGet(() -> {
                     Rol nuevoRol = new Rol();
-                    nuevoRol.setNombre("USER");
-                    nuevoRol.setDescripcion("Usuario estándar del sistema");
+                    nuevoRol.setNombre("ROLE_AUXILIAR_BODEGA");
+                    nuevoRol.setDescripcion("Auxiliar de Bodega");
                     nuevoRol.setActivo(true);
                     return rolRepository.save(nuevoRol);
                 });

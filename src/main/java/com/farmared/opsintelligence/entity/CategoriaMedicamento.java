@@ -17,6 +17,9 @@ import java.util.List;
 @Table(name = "categorias_medicamento")
 public class CategoriaMedicamento extends BaseEntity {
 
+    @Column(unique = true, length = 50)
+    private String codigo;
+
     @Column(nullable = false, unique = true, length = 100)
     private String nombre;
 

@@ -7,6 +7,10 @@ import java.util.Optional;
 
 public interface CategoriaMedicamentoRepository extends JpaRepository<CategoriaMedicamento, Long> {
 
+    Optional<CategoriaMedicamento> findByCodigo(String codigo);
+
+    boolean existsByCodigo(String codigo);
+
     Optional<CategoriaMedicamento> findByNombreIgnoreCase(String nombre);
 
     boolean existsByNombreIgnoreCase(String nombre);

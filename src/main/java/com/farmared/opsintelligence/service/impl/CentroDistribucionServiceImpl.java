@@ -41,7 +41,7 @@ public class CentroDistribucionServiceImpl implements CentroDistribucionService 
     @Override
     public CentroDistribucionResponse crear(CentroDistribucionRequest request) {
         if (centroDistribucionRepository.existsByCodigo(request.codigo())) {
-            throw new DuplicateResourceException("Ya existe un centro de distribución con el código: " + request.codigo());
+            throw new DuplicateResourceException("Ya existe un centro de distribucion con el codigo: " + request.codigo());
         }
 
         CentroDistribucion centro = centroDistribucionMapper.toEntity(request);
@@ -58,13 +58,8 @@ public class CentroDistribucionServiceImpl implements CentroDistribucionService 
     public CentroDistribucionResponse actualizar(Long id, CentroDistribucionRequest request) {
         CentroDistribucion centro = buscarCentroPorId(id);
 
-        centroDistribucionRepository.findByCodigo(request.codigo())
-                .filter(centroExistente -> !centroExistente.getId().equals(id))
-                .ifPresent(centroExistente -> {
-                    throw new DuplicateResourceException("Ya existe un centro de distribución con el código: " + request.codigo());
-                });
-
-        centro.setCodigo(request.codigo());
+        // El codigo del centro de distribucion no se modifica en actualizacion;
+        // se conserva como identificador operativo estable.
         centro.setNombre(request.nombre());
         centro.setDireccion(request.direccion());
         centro.setCiudad(request.ciudad());
@@ -82,14 +77,13 @@ public class CentroDistribucionServiceImpl implements CentroDistribucionService 
     public void eliminar(Long id) {
         CentroDistribucion centro = buscarCentroPorId(id);
 
-        // Eliminación lógica para no romper relaciones con inventarios, alertas o métricas.
+        // Eliminacion logica para no romper relaciones con inventarios, alertas o metricas.
         centro.setActivo(false);
         centroDistribucionRepository.save(centro);
     }
 
     private CentroDistribucion buscarCentroPorId(Long id) {
         return centroDistribucionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Centro de distribución no encontrado con id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Centro de distribucion no encontrado con id: " + id));
     }
-
 }

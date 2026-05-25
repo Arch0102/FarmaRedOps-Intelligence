@@ -40,8 +40,12 @@ public class CategoriaMedicamentoServiceImpl implements CategoriaMedicamentoServ
 
     @Override
     public CategoriaMedicamentoResponse crear(CategoriaMedicamentoRequest request) {
+        if (categoriaMedicamentoRepository.existsByCodigo(request.codigo())) {
+            throw new DuplicateResourceException("Ya existe una categoria con el codigo: " + request.codigo());
+        }
+
         if (categoriaMedicamentoRepository.existsByNombreIgnoreCase(request.nombre())) {
-            throw new DuplicateResourceException("Ya existe una categoría con el nombre: " + request.nombre());
+            throw new DuplicateResourceException("Ya existe una categoria con el nombre: " + request.nombre());
         }
 
         CategoriaMedicamento categoria = categoriaMedicamentoMapper.toEntity(request);
@@ -61,9 +65,11 @@ public class CategoriaMedicamentoServiceImpl implements CategoriaMedicamentoServ
         categoriaMedicamentoRepository.findByNombreIgnoreCase(request.nombre())
                 .filter(categoriaExistente -> !categoriaExistente.getId().equals(id))
                 .ifPresent(categoriaExistente -> {
-                    throw new DuplicateResourceException("Ya existe una categoría con el nombre: " + request.nombre());
+                    throw new DuplicateResourceException("Ya existe una categoria con el nombre: " + request.nombre());
                 });
 
+        // El codigo de la categoria no se modifica en actualizacion;
+        // se conserva como identificador operativo estable.
         categoria.setNombre(request.nombre());
         categoria.setDescripcion(request.descripcion());
 
@@ -80,14 +86,13 @@ public class CategoriaMedicamentoServiceImpl implements CategoriaMedicamentoServ
     public void eliminar(Long id) {
         CategoriaMedicamento categoria = buscarCategoriaPorId(id);
 
-        // Eliminación lógica para evitar problemas si la categoría ya está asociada a medicamentos.
+        // Eliminacion logica para evitar problemas si la categoria ya esta asociada a medicamentos.
         categoria.setActivo(false);
         categoriaMedicamentoRepository.save(categoria);
     }
 
     private CategoriaMedicamento buscarCategoriaPorId(Long id) {
         return categoriaMedicamentoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Categoría de medicamento no encontrada con id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Categoria de medicamento no encontrada con id: " + id));
     }
-
 }

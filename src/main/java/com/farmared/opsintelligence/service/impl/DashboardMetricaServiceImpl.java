@@ -9,6 +9,7 @@ import com.farmared.opsintelligence.entity.OrdenCompra;
 import com.farmared.opsintelligence.entity.enums.EstadoAlerta;
 import com.farmared.opsintelligence.entity.enums.EstadoOrdenCompra;
 import com.farmared.opsintelligence.entity.enums.TipoMetricaDashboard;
+import com.farmared.opsintelligence.mapper.DashboardMetricaMapper;
 import com.farmared.opsintelligence.repository.AlertaStockRepository;
 import com.farmared.opsintelligence.repository.DashboardMetricaRepository;
 import com.farmared.opsintelligence.repository.InventarioRepository;
@@ -36,6 +37,7 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
     private final LoteMedicamentoRepository loteMedicamentoRepository;
     private final OrdenCompraRepository ordenCompraRepository;
     private final AlertaStockRepository alertaStockRepository;
+    private final DashboardMetricaMapper dashboardMetricaMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -73,7 +75,7 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
     public List<DashboardMetricaResponse> listarMetricas() {
         return dashboardMetricaRepository.findAll()
                 .stream()
-                .map(this::toResponse)
+                .map(dashboardMetricaMapper::toResponse)
                 .toList();
     }
 
@@ -82,7 +84,7 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
     public List<DashboardMetricaResponse> listarMetricasPorTipo(TipoMetricaDashboard tipoMetrica) {
         return dashboardMetricaRepository.findByTipoMetrica(tipoMetrica)
                 .stream()
-                .map(this::toResponse)
+                .map(dashboardMetricaMapper::toResponse)
                 .toList();
     }
 
@@ -101,14 +103,14 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
                 TipoMetricaDashboard.PROXIMO_VENCIMIENTO,
                 BigDecimal.valueOf(resumen.totalLotesProximosVencer()),
                 "lotes",
-                "Cantidad de lotes próximos a vencer en los próximos " + DIAS_PROXIMO_VENCIMIENTO + " días"
+                "Cantidad de lotes proximos a vencer en los proximos " + DIAS_PROXIMO_VENCIMIENTO + " dias"
         );
 
         guardarMetrica(
                 TipoMetricaDashboard.ORDENES_PENDIENTES,
                 BigDecimal.valueOf(resumen.totalOrdenesPendientes()),
-                "órdenes",
-                "Cantidad de órdenes de compra pendientes"
+                "ordenes",
+                "Cantidad de ordenes de compra pendientes"
         );
 
         return listarMetricas();
@@ -128,26 +130,5 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
         metrica.setFechaCalculo(LocalDateTime.now());
 
         dashboardMetricaRepository.save(metrica);
-    }
-
-    private DashboardMetricaResponse toResponse(DashboardMetrica metrica) {
-        Long medicamentoId = metrica.getMedicamento() != null ? metrica.getMedicamento().getId() : null;
-        String medicamentoNombre = metrica.getMedicamento() != null ? metrica.getMedicamento().getNombre() : null;
-
-        Long centroId = metrica.getCentroDistribucion() != null ? metrica.getCentroDistribucion().getId() : null;
-        String centroNombre = metrica.getCentroDistribucion() != null ? metrica.getCentroDistribucion().getNombre() : null;
-
-        return new DashboardMetricaResponse(
-                metrica.getId(),
-                metrica.getTipoMetrica(),
-                metrica.getValor(),
-                metrica.getUnidad(),
-                metrica.getDescripcion(),
-                metrica.getFechaCalculo(),
-                medicamentoId,
-                medicamentoNombre,
-                centroId,
-                centroNombre
-        );
     }
 }

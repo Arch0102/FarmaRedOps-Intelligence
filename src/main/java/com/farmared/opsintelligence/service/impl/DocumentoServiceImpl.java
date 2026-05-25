@@ -8,6 +8,7 @@ import com.farmared.opsintelligence.entity.enums.EstadoDocumento;
 import com.farmared.opsintelligence.entity.enums.TipoDocumento;
 import com.farmared.opsintelligence.exception.BadRequestException;
 import com.farmared.opsintelligence.exception.ResourceNotFoundException;
+import com.farmared.opsintelligence.mapper.DocumentoMapper;
 import com.farmared.opsintelligence.repository.DocumentoRepository;
 import com.farmared.opsintelligence.service.DocumentoService;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ import java.util.UUID;
 public class DocumentoServiceImpl implements DocumentoService {
 
     private final DocumentoRepository documentoRepository;
+    private final DocumentoMapper documentoMapper;
 
     @Value("${app.documents.storage-path}")
     private String storagePath;
@@ -77,7 +79,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 
         Documento documentoGuardado = documentoRepository.save(documento);
 
-        return toResponse(documentoGuardado);
+        return documentoMapper.toResponse(documentoGuardado);
     }
 
     @Override
@@ -85,7 +87,7 @@ public class DocumentoServiceImpl implements DocumentoService {
     public List<DocumentoResponse> listarDocumentosActivos() {
         return documentoRepository.findByActivoTrue()
                 .stream()
-                .map(this::toResponse)
+                .map(documentoMapper::toResponse)
                 .toList();
     }
 
@@ -93,7 +95,7 @@ public class DocumentoServiceImpl implements DocumentoService {
     @Transactional(readOnly = true)
     public DocumentoResponse consultarPorId(Long id) {
         Documento documento = buscarDocumentoActivoPorId(id);
-        return toResponse(documento);
+        return documentoMapper.toResponse(documento);
     }
 
     @Override
@@ -134,7 +136,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 
         Documento documentoActualizado = documentoRepository.save(documento);
 
-        return toResponse(documentoActualizado);
+        return documentoMapper.toResponse(documentoActualizado);
     }
 
     @Override
@@ -212,22 +214,4 @@ public class DocumentoServiceImpl implements DocumentoService {
         return documento;
     }
 
-    private DocumentoResponse toResponse(Documento documento) {
-        return new DocumentoResponse(
-                documento.getId(),
-                documento.getNombreOriginal(),
-                documento.getNombreAlmacenado(),
-                documento.getContentType(),
-                documento.getTamanoBytes(),
-                documento.getRutaArchivo(),
-                documento.getTipoDocumento(),
-                documento.getEstadoDocumento(),
-                documento.getDescripcion(),
-                documento.getModuloReferencia(),
-                documento.getReferenciaId(),
-                documento.getUsuarioCarga(),
-                documento.getFechaCarga(),
-                documento.getActivo()
-        );
-    }
 }

@@ -2,7 +2,6 @@ package com.farmared.opsintelligence.service.impl;
 
 import com.farmared.opsintelligence.dto.request.DetalleOrdenRequest;
 import com.farmared.opsintelligence.dto.request.OrdenCompraRequest;
-import com.farmared.opsintelligence.dto.response.DetalleOrdenResponse;
 import com.farmared.opsintelligence.dto.response.OrdenCompraResponse;
 import com.farmared.opsintelligence.entity.DetalleOrden;
 import com.farmared.opsintelligence.entity.Medicamento;
@@ -11,6 +10,7 @@ import com.farmared.opsintelligence.entity.Proveedor;
 import com.farmared.opsintelligence.entity.enums.EstadoOrdenCompra;
 import com.farmared.opsintelligence.exception.BusinessRuleException;
 import com.farmared.opsintelligence.exception.ResourceNotFoundException;
+import com.farmared.opsintelligence.mapper.OrdenCompraMapper;
 import com.farmared.opsintelligence.repository.DetalleOrdenRepository;
 import com.farmared.opsintelligence.repository.MedicamentoRepository;
 import com.farmared.opsintelligence.repository.OrdenCompraRepository;
@@ -33,11 +33,12 @@ public class OrdenCompraServiceImpl implements OrdenCompraService {
     private final DetalleOrdenRepository detalleOrdenRepository;
     private final ProveedorRepository proveedorRepository;
     private final MedicamentoRepository medicamentoRepository;
+    private final OrdenCompraMapper ordenCompraMapper;
 
     @Override
     public OrdenCompraResponse crearOrdenCompra(OrdenCompraRequest request) {
         if (ordenCompraRepository.existsByCodigo(request.codigo())) {
-            throw new BusinessRuleException("Ya existe una orden de compra con el código: " + request.codigo());
+            throw new BusinessRuleException("Ya existe una orden de compra con el codigo: " + request.codigo());
         }
 
         Proveedor proveedor = proveedorRepository.findById(request.proveedorId())
@@ -62,8 +63,9 @@ public class OrdenCompraServiceImpl implements OrdenCompraService {
                 .toList();
 
         detalleOrdenRepository.saveAll(detalles);
+        ordenGuardada.setDetalles(detalles);
 
-        return toResponse(ordenGuardada);
+        return ordenCompraMapper.toResponse(ordenGuardada);
     }
 
     @Override
@@ -146,38 +148,8 @@ public class OrdenCompraServiceImpl implements OrdenCompraService {
     }
 
     private OrdenCompraResponse toResponse(OrdenCompra ordenCompra) {
-        List<DetalleOrdenResponse> detalles = detalleOrdenRepository.findByOrdenCompraId(ordenCompra.getId())
-                .stream()
-                .map(this::toDetalleResponse)
-                .toList();
-
-        return new OrdenCompraResponse(
-                ordenCompra.getId(),
-                ordenCompra.getCodigo(),
-                ordenCompra.getFechaOrden(),
-                ordenCompra.getFechaEstimadaEntrega(),
-                ordenCompra.getFechaRecepcion(),
-                ordenCompra.getEstado(),
-                ordenCompra.getTotal(),
-                ordenCompra.getObservacion(),
-                ordenCompra.getProveedor().getId(),
-                ordenCompra.getProveedor().getNit(),
-                ordenCompra.getProveedor().getNombre(),
-                detalles,
-                ordenCompra.getCreatedAt(),
-                ordenCompra.getUpdatedAt()
-        );
-    }
-
-    private DetalleOrdenResponse toDetalleResponse(DetalleOrden detalleOrden) {
-        return new DetalleOrdenResponse(
-                detalleOrden.getId(),
-                detalleOrden.getMedicamento().getId(),
-                detalleOrden.getMedicamento().getCodigo(),
-                detalleOrden.getMedicamento().getNombre(),
-                detalleOrden.getCantidad(),
-                detalleOrden.getPrecioUnitario(),
-                detalleOrden.getSubtotal()
-        );
+        List<DetalleOrden> detalles = detalleOrdenRepository.findByOrdenCompraId(ordenCompra.getId());
+        ordenCompra.setDetalles(detalles);
+        return ordenCompraMapper.toResponse(ordenCompra);
     }
 }
