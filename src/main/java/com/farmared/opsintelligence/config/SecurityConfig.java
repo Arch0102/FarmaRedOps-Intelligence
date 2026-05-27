@@ -62,53 +62,99 @@ public class SecurityConfig {
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
+
+                        // Endpoints públicos de autenticación.
                         .requestMatchers("/api/v1/auth/**").permitAll()
 
+                        // Inventario físico:
+                        // Auxiliar de Bodega puede registrar entradas y salidas.
+                        // Administrador/Auditor también puede hacerlo por supervisión.
                         .requestMatchers(HttpMethod.POST, "/api/v1/movimientos-inventario/**")
                         .hasAnyRole("AUXILIAR_BODEGA", "ADMIN_AUDITOR")
+
                         .requestMatchers(HttpMethod.GET, "/api/v1/movimientos-inventario/**")
                         .hasAnyRole("AUXILIAR_BODEGA", "ANALISTA_COMPRAS", "ADMIN_AUDITOR")
 
+                        // Medicamentos:
+                        // Todos los roles definidos pueden consultar.
+                        // Solo Administrador/Auditor puede crear, actualizar o eliminar registros maestros.
                         .requestMatchers(HttpMethod.GET, "/api/v1/medicamentos/**")
                         .hasAnyRole("AUXILIAR_BODEGA", "ANALISTA_COMPRAS", "ADMIN_AUDITOR")
+
                         .requestMatchers(HttpMethod.POST, "/api/v1/medicamentos/**")
                         .hasRole("ADMIN_AUDITOR")
+
                         .requestMatchers(HttpMethod.PUT, "/api/v1/medicamentos/**")
                         .hasRole("ADMIN_AUDITOR")
+
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/medicamentos/**")
                         .hasRole("ADMIN_AUDITOR")
 
+                        // Categorías de medicamento:
+                        // Son registros maestros. La consulta es general, pero la modificación solo es de administración.
                         .requestMatchers(HttpMethod.GET, "/api/v1/categorias-medicamento/**")
                         .hasAnyRole("AUXILIAR_BODEGA", "ANALISTA_COMPRAS", "ADMIN_AUDITOR")
+
                         .requestMatchers(HttpMethod.POST, "/api/v1/categorias-medicamento/**")
                         .hasRole("ADMIN_AUDITOR")
+
                         .requestMatchers(HttpMethod.PUT, "/api/v1/categorias-medicamento/**")
                         .hasRole("ADMIN_AUDITOR")
+
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/categorias-medicamento/**")
                         .hasRole("ADMIN_AUDITOR")
 
+                        // Centros de distribución:
+                        // Todos pueden consultar. Solo Administrador/Auditor puede modificar.
                         .requestMatchers(HttpMethod.GET, "/api/v1/centros-distribucion/**")
                         .hasAnyRole("AUXILIAR_BODEGA", "ANALISTA_COMPRAS", "ADMIN_AUDITOR")
+
                         .requestMatchers(HttpMethod.POST, "/api/v1/centros-distribucion/**")
                         .hasRole("ADMIN_AUDITOR")
+
                         .requestMatchers(HttpMethod.PUT, "/api/v1/centros-distribucion/**")
                         .hasRole("ADMIN_AUDITOR")
+
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/centros-distribucion/**")
                         .hasRole("ADMIN_AUDITOR")
 
+                        // Documentos:
+                        // Por ahora se permite a cualquier usuario autenticado.
+                        .requestMatchers("/api/v1/documentos/**")
+                        .authenticated()
+
+                        // Proveedores:
+                        // El Analista de Compras gestiona proveedores.
+                        // Administrador/Auditor también tiene acceso.
                         .requestMatchers("/api/v1/proveedores/**")
                         .hasAnyRole("ANALISTA_COMPRAS", "ADMIN_AUDITOR")
+
+                        // Órdenes de compra:
+                        // Corresponden al rol de compras y administración.
                         .requestMatchers("/api/v1/ordenes-compra/**")
                         .hasAnyRole("ANALISTA_COMPRAS", "ADMIN_AUDITOR")
 
+                        // Dashboard:
+                        // Analista de Compras puede consultar métricas operativas.
+                        // Administrador/Auditor puede consultar y administrar métricas.
                         .requestMatchers(HttpMethod.GET, "/api/v1/dashboard/**")
                         .hasAnyRole("ANALISTA_COMPRAS", "ADMIN_AUDITOR")
+
                         .requestMatchers(HttpMethod.POST, "/api/v1/dashboard/**")
                         .hasRole("ADMIN_AUDITOR")
 
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/dashboard/**")
+                        .hasRole("ADMIN_AUDITOR")
+
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/dashboard/**")
+                        .hasRole("ADMIN_AUDITOR")
+
+                        // Usuarios:
+                        // Solo Administrador/Auditor puede gestionar usuarios.
                         .requestMatchers("/api/v1/usuarios/**")
                         .hasRole("ADMIN_AUDITOR")
 
+                        // Cualquier otro endpoint requiere usuario autenticado.
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
