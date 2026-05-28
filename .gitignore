@@ -33,3 +33,9 @@ build/
 .vscode/
 
 uploads/
+
+# Frontend local/generated files
+frontend/.env
+frontend/node_modules/
+frontend/dist/
+
