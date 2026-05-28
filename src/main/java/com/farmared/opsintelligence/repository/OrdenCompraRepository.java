@@ -18,5 +18,7 @@ public interface OrdenCompraRepository extends JpaRepository<OrdenCompra, Long> 
 
     List<OrdenCompra> findByEstado(EstadoOrdenCompra estado);
 
+    long countByEstado(EstadoOrdenCompra estado);
+
     List<OrdenCompra> findByFechaOrdenBetween(LocalDate fechaInicio, LocalDate fechaFin);
 }

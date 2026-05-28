@@ -689,3 +689,105 @@ El proyecto cuenta actualmente con:
 - Documentación de pruebas.
 - Trabajo colaborativo con Git y Pull Requests.
 
+---
+
+## Finalizacion backend
+
+El backend queda preparado para la fase final de sustentacion con:
+
+- Respuestas normalizadas mediante `ApiResponse` para endpoints JSON.
+- Descarga de documentos PDF como respuesta binaria con `ResponseEntity<Resource>`.
+- Seguridad JWT con reglas por rol para `ROLE_AUXILIAR_BODEGA`, `ROLE_ANALISTA_COMPRAS` y `ROLE_ADMIN_AUDITOR`.
+- Dashboard con metricas reales de medicamentos, proveedores, ordenes, inventario, alertas y movimientos recientes.
+- Generacion de reporte PDF de dashboard desde datos reales del sistema.
+- Dockerizacion local/dev para backend y PostgreSQL.
+
+### Roles
+
+- `ROLE_AUXILIAR_BODEGA`: consulta catalogos y registra movimientos de inventario.
+- `ROLE_ANALISTA_COMPRAS`: consulta dashboard, proveedores y ordenes de compra.
+- `ROLE_ADMIN_AUDITOR`: administra catalogos, dashboard y auditoria del sistema.
+
+### Endpoints principales
+
+```http
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+
+GET  /api/v1/categorias-medicamento
+POST /api/v1/categorias-medicamento
+PUT  /api/v1/categorias-medicamento/{id}
+
+GET  /api/v1/centros-distribucion
+POST /api/v1/centros-distribucion
+PUT  /api/v1/centros-distribucion/{id}
+
+GET  /api/v1/medicamentos
+POST /api/v1/medicamentos
+PUT  /api/v1/medicamentos/{id}
+
+POST /api/v1/movimientos-inventario
+GET  /api/v1/movimientos-inventario/{id}
+GET  /api/v1/movimientos-inventario/kardex/inventario/{inventarioId}
+
+GET  /api/v1/proveedores
+POST /api/v1/proveedores
+
+GET  /api/v1/ordenes-compra
+POST /api/v1/ordenes-compra
+PATCH /api/v1/ordenes-compra/{id}/estado/{nuevoEstado}
+
+GET  /api/v1/dashboard/resumen
+GET  /api/v1/dashboard/metricas
+GET  /api/v1/dashboard/metricas/tipo/{tipo}
+POST /api/v1/dashboard/recalcular
+
+POST /api/v1/documentos/upload
+POST /api/v1/documentos/generar/dashboard
+GET  /api/v1/documentos
+GET  /api/v1/documentos/{id}
+GET  /api/v1/documentos/{id}/download
+PUT  /api/v1/documentos/{id}
+DELETE /api/v1/documentos/{id}
+```
+
+### Variables de entorno locales
+
+```text
+DB_URL=jdbc:postgresql://localhost:5432/farmared_db
+DB_USER=postgres
+DB_PASSWORD=TU_PASSWORD_LOCAL
+SERVER_PORT=8080
+JWT_SECRET=clave_jwt_de_desarrollo_con_minimo_32_caracteres
+JWT_EXPIRATION_MS=3600000
+DOCUMENT_STORAGE_PATH=uploads/documentos
+DOCUMENT_MAX_SIZE_BYTES=10485760
+```
+
+### Docker
+
+```bash
+docker compose up --build
+```
+
+`docker-compose.yml` levanta:
+
+- `postgres` con base `farmared_db`.
+- `backend` expuesto en `http://localhost:8080`.
+
+Las credenciales del compose son solo para desarrollo local.
+
+### Flujo Git sugerido
+
+- Trabajar en ramas `feature/*`.
+- Abrir PR hacia `dev`.
+- Validar `.\mvnw.cmd compile` antes del PR.
+- No hacer merge directo a `dev` sin revision.
+
+### Elevadores
+
+- Dashboard: API de resumen y metricas reales para analitica.
+- Documentos PDF: subida, gestion, descarga y generacion de reporte.
+- Dockerizacion: backend y PostgreSQL listos para local/dev.
+- Frontend: pendiente para otra fase y otra rama.
+

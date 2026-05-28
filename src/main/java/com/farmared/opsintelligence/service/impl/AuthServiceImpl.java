@@ -27,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AuthServiceImpl implements AuthService {
 
+    private static final String DEFAULT_ROLE = "ROLE_AUXILIAR_BODEGA";
+
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final UsuarioRolRepository usuarioRolRepository;
@@ -38,21 +40,15 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse register(RegisterRequest request) {
         if (usuarioRepository.existsByUsername(request.username())) {
-            throw new DuplicateResourceException("El username ya está registrado");
+            throw new DuplicateResourceException("El username ya esta registrado");
         }
 
         if (usuarioRepository.existsByEmail(request.email())) {
-            throw new DuplicateResourceException("El email ya está registrado");
+            throw new DuplicateResourceException("El email ya esta registrado");
         }
 
-        Rol rolUser = rolRepository.findByNombre("USER")
-                .orElseGet(() -> {
-                    Rol nuevoRol = new Rol();
-                    nuevoRol.setNombre("USER");
-                    nuevoRol.setDescripcion("Usuario estándar del sistema");
-                    nuevoRol.setActivo(true);
-                    return rolRepository.save(nuevoRol);
-                });
+        Rol rolDefault = rolRepository.findByNombre(DEFAULT_ROLE)
+                .orElseThrow(() -> new ResourceNotFoundException("Rol por defecto no encontrado: " + DEFAULT_ROLE));
 
         Usuario usuario = new Usuario();
         usuario.setUsername(request.username());
@@ -65,7 +61,7 @@ public class AuthServiceImpl implements AuthService {
 
         UsuarioRol usuarioRol = new UsuarioRol();
         usuarioRol.setUsuario(usuarioGuardado);
-        usuarioRol.setRol(rolUser);
+        usuarioRol.setRol(rolDefault);
         usuarioRolRepository.save(usuarioRol);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(usuarioGuardado.getUsername());

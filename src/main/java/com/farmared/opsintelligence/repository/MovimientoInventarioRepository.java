@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface MovimientoInventarioRepository extends JpaRepository<MovimientoInventario, Long> {
 
+    List<MovimientoInventario> findTop10ByOrderByFechaMovimientoDesc();
+
     List<MovimientoInventario> findByInventarioIdOrderByFechaMovimientoDesc(Long inventarioId);
 
     List<MovimientoInventario> findByLoteMedicamentoIdOrderByFechaMovimientoDesc(Long loteMedicamentoId);

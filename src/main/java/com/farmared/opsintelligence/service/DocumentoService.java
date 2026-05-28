@@ -12,6 +12,8 @@ public interface DocumentoService {
 
     DocumentoResponse subirDocumento(MultipartFile archivo, DocumentoUploadRequest request);
 
+    DocumentoResponse generarReporteDashboard(String usuarioGeneracion);
+
     List<DocumentoResponse> listarDocumentosActivos();
 
     DocumentoResponse consultarPorId(Long id);

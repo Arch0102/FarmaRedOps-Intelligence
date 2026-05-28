@@ -12,6 +12,8 @@ public interface MedicamentoRepository extends JpaRepository<Medicamento, Long> 
 
     boolean existsByCodigo(String codigo);
 
+    long countByActivoTrue();
+
     List<Medicamento> findByActivoTrue();
 
     List<Medicamento> findByNombreContainingIgnoreCase(String nombre);
