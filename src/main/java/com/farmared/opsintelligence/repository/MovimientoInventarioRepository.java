@@ -13,4 +13,6 @@ public interface MovimientoInventarioRepository extends JpaRepository<Movimiento
     List<MovimientoInventario> findByLoteMedicamentoIdOrderByFechaMovimientoDesc(Long loteMedicamentoId);
 
     List<MovimientoInventario> findByTipoMovimiento(TipoMovimiento tipoMovimiento);
+
+    List<MovimientoInventario> findTop10ByOrderByFechaMovimientoDesc();
 }

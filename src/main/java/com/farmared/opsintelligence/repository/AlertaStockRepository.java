@@ -10,6 +10,8 @@ public interface AlertaStockRepository extends JpaRepository<AlertaStock, Long> 
 
     List<AlertaStock> findByEstadoAlerta(EstadoAlerta estadoAlerta);
 
+    long countByEstadoAlerta(EstadoAlerta estadoAlerta);
+
     List<AlertaStock> findByMedicamentoIdAndEstadoAlerta(Long medicamentoId, EstadoAlerta estadoAlerta);
 
     List<AlertaStock> findByCentroDistribucionIdAndEstadoAlerta(Long centroDistribucionId, EstadoAlerta estadoAlerta);
