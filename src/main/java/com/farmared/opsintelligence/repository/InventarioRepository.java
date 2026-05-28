@@ -2,6 +2,7 @@ package com.farmared.opsintelligence.repository;
 
 import com.farmared.opsintelligence.entity.Inventario;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,4 +19,12 @@ public interface InventarioRepository extends JpaRepository<Inventario, Long> {
     List<Inventario> findByCentroDistribucionId(Long centroDistribucionId);
 
     List<Inventario> findByStockActualLessThanEqual(Integer stockActual);
+
+    @Query("""
+            select count(i)
+            from Inventario i
+            where i.stockActual <= i.medicamento.stockMinimo
+               or i.stockActual <= i.medicamento.puntoReorden
+            """)
+    long countStockCritico();
 }

@@ -2,10 +2,11 @@ package com.farmared.opsintelligence.service.impl;
 
 import com.farmared.opsintelligence.dto.response.DashboardMetricaResponse;
 import com.farmared.opsintelligence.dto.response.DashboardResumenResponse;
+import com.farmared.opsintelligence.dto.response.MovimientoInventarioResponse;
 import com.farmared.opsintelligence.entity.DashboardMetrica;
 import com.farmared.opsintelligence.entity.Inventario;
 import com.farmared.opsintelligence.entity.LoteMedicamento;
-import com.farmared.opsintelligence.entity.OrdenCompra;
+import com.farmared.opsintelligence.entity.MovimientoInventario;
 import com.farmared.opsintelligence.entity.enums.EstadoAlerta;
 import com.farmared.opsintelligence.entity.enums.EstadoOrdenCompra;
 import com.farmared.opsintelligence.entity.enums.TipoMetricaDashboard;
@@ -13,7 +14,10 @@ import com.farmared.opsintelligence.repository.AlertaStockRepository;
 import com.farmared.opsintelligence.repository.DashboardMetricaRepository;
 import com.farmared.opsintelligence.repository.InventarioRepository;
 import com.farmared.opsintelligence.repository.LoteMedicamentoRepository;
+import com.farmared.opsintelligence.repository.MedicamentoRepository;
+import com.farmared.opsintelligence.repository.MovimientoInventarioRepository;
 import com.farmared.opsintelligence.repository.OrdenCompraRepository;
+import com.farmared.opsintelligence.repository.ProveedorRepository;
 import com.farmared.opsintelligence.service.DashboardMetricaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,7 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -32,39 +38,52 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
     private static final int DIAS_PROXIMO_VENCIMIENTO = 30;
 
     private final DashboardMetricaRepository dashboardMetricaRepository;
+    private final MedicamentoRepository medicamentoRepository;
+    private final ProveedorRepository proveedorRepository;
     private final InventarioRepository inventarioRepository;
     private final LoteMedicamentoRepository loteMedicamentoRepository;
     private final OrdenCompraRepository ordenCompraRepository;
     private final AlertaStockRepository alertaStockRepository;
+    private final MovimientoInventarioRepository movimientoInventarioRepository;
 
     @Override
     @Transactional(readOnly = true)
     public DashboardResumenResponse obtenerResumenGeneral() {
-        List<Inventario> inventarios = inventarioRepository.findAll();
-
-        long totalStockCritico = inventarios.stream()
-                .filter(inventario -> inventario.getStockActual() <= inventario.getMedicamento().getPuntoReorden())
-                .count();
+        long totalMedicamentosActivos = medicamentoRepository.countByActivoTrue();
+        long totalProveedoresActivos = proveedorRepository.countByActivoTrue();
+        long totalInventarios = inventarioRepository.count();
+        long totalStockCritico = inventarioRepository.countStockCritico();
 
         long totalLotesProximosVencer = loteMedicamentoRepository
                 .findByFechaVencimientoBefore(LocalDate.now().plusDays(DIAS_PROXIMO_VENCIMIENTO))
                 .size();
 
-        List<OrdenCompra> ordenesPendientes = ordenCompraRepository.findByEstado(EstadoOrdenCompra.PENDIENTE);
+        long totalOrdenesPendientes = ordenCompraRepository.countByEstado(EstadoOrdenCompra.PENDIENTE);
+        BigDecimal valorTotalOrdenesPendientes =
+                ordenCompraRepository.sumTotalByEstado(EstadoOrdenCompra.PENDIENTE);
+        if (valorTotalOrdenesPendientes == null) {
+            valorTotalOrdenesPendientes = BigDecimal.ZERO;
+        }
 
-        BigDecimal valorTotalOrdenesPendientes = ordenesPendientes.stream()
-                .map(OrdenCompra::getTotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        long totalAlertasPendientes = alertaStockRepository.findByEstadoAlerta(EstadoAlerta.PENDIENTE).size();
+        long totalAlertasPendientes = alertaStockRepository.countByEstadoAlerta(EstadoAlerta.PENDIENTE);
+        Map<String, Long> ordenesPorEstado = obtenerOrdenesPorEstado();
+        List<MovimientoInventarioResponse> movimientosRecientes = movimientoInventarioRepository
+                .findTop10ByOrderByFechaMovimientoDesc()
+                .stream()
+                .map(this::toMovimientoResponse)
+                .toList();
 
         return new DashboardResumenResponse(
-                (long) inventarios.size(),
+                totalMedicamentosActivos,
+                totalProveedoresActivos,
+                totalInventarios,
                 totalStockCritico,
                 totalLotesProximosVencer,
-                (long) ordenesPendientes.size(),
+                totalOrdenesPendientes,
                 totalAlertasPendientes,
-                valorTotalOrdenesPendientes
+                valorTotalOrdenesPendientes,
+                ordenesPorEstado,
+                movimientosRecientes
         );
     }
 
@@ -128,6 +147,55 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
         metrica.setFechaCalculo(LocalDateTime.now());
 
         dashboardMetricaRepository.save(metrica);
+    }
+
+    private Map<String, Long> obtenerOrdenesPorEstado() {
+        Map<EstadoOrdenCompra, Long> conteos = new LinkedHashMap<>();
+        for (Object[] row : ordenCompraRepository.countByEstadoGrouped()) {
+            EstadoOrdenCompra estado = (EstadoOrdenCompra) row[0];
+            long total = ((Number) row[1]).longValue();
+            if (total > 0) {
+                conteos.put(estado, total);
+            }
+        }
+
+        Map<String, Long> response = new LinkedHashMap<>();
+        for (EstadoOrdenCompra estado : EstadoOrdenCompra.values()) {
+            Long total = conteos.get(estado);
+            if (total != null) {
+                response.put(estado.name(), total);
+            }
+        }
+
+        return response;
+    }
+
+    private MovimientoInventarioResponse toMovimientoResponse(MovimientoInventario movimiento) {
+        Inventario inventario = movimiento.getInventario();
+        LoteMedicamento lote = movimiento.getLoteMedicamento();
+
+        return new MovimientoInventarioResponse(
+                movimiento.getId(),
+                movimiento.getTipoMovimiento(),
+                movimiento.getCantidad(),
+                movimiento.getStockAntes(),
+                movimiento.getStockDespues(),
+                movimiento.getMotivo(),
+                movimiento.getObservacion(),
+                movimiento.getUsuarioResponsable(),
+                movimiento.getFechaMovimiento(),
+
+                inventario.getId(),
+                inventario.getMedicamento().getId(),
+                inventario.getMedicamento().getCodigo(),
+                inventario.getMedicamento().getNombre(),
+
+                lote.getId(),
+                lote.getNumeroLote(),
+
+                inventario.getCentroDistribucion().getId(),
+                inventario.getCentroDistribucion().getNombre()
+        );
     }
 
     private DashboardMetricaResponse toResponse(DashboardMetrica metrica) {

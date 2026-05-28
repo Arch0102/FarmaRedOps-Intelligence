@@ -12,6 +12,8 @@ public interface ProveedorRepository extends JpaRepository<Proveedor, Long> {
 
     boolean existsByNit(String nit);
 
+    long countByActivoTrue();
+
     List<Proveedor> findByActivoTrue();
 
     List<Proveedor> findByNombreContainingIgnoreCase(String nombre);

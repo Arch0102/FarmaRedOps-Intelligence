@@ -22,6 +22,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Objects;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -70,13 +73,15 @@ public class AuthServiceImpl implements AuthService {
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(usuarioGuardado.getUsername());
         String token = jwtService.generateToken(userDetails);
+        List<String> roles = obtenerRolesUsuario(usuarioGuardado.getId());
 
         return new AuthResponse(
                 token,
                 "Bearer",
                 usuarioGuardado.getId(),
                 usuarioGuardado.getUsername(),
-                usuarioGuardado.getEmail()
+                usuarioGuardado.getEmail(),
+                roles
         );
     }
 
@@ -95,13 +100,27 @@ public class AuthServiceImpl implements AuthService {
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(usuario.getUsername());
         String token = jwtService.generateToken(userDetails);
+        List<String> roles = obtenerRolesUsuario(usuario.getId());
 
         return new AuthResponse(
                 token,
                 "Bearer",
                 usuario.getId(),
                 usuario.getUsername(),
-                usuario.getEmail()
+                usuario.getEmail(),
+                roles
         );
+    }
+
+    private List<String> obtenerRolesUsuario(Long usuarioId) {
+        return usuarioRolRepository.findByUsuarioId(usuarioId)
+                .stream()
+                .map(UsuarioRol::getRol)
+                .filter(Objects::nonNull)
+                .map(Rol::getNombre)
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(nombre -> !nombre.isBlank())
+                .toList();
     }
 }
