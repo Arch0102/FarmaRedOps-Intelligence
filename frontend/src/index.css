@@ -60,6 +60,9 @@ a {
   grid-template-columns: minmax(0, 1fr) minmax(360px, 460px);
   gap: 28px;
   padding: 32px;
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.1), rgba(29, 78, 216, 0.07)),
+    #f7fafc;
 }
 
 .auth-hero-panel {
@@ -70,8 +73,8 @@ a {
   padding: 42px;
   color: white;
   background:
-    linear-gradient(145deg, rgba(6, 78, 59, 0.93), rgba(29, 78, 216, 0.78)),
-    linear-gradient(180deg, #0f766e, #1d4ed8);
+    linear-gradient(145deg, rgba(6, 78, 59, 0.96), rgba(15, 118, 110, 0.9)),
+    #064e3b;
   box-shadow: var(--shadow);
 }
 
@@ -94,15 +97,17 @@ a {
 .auth-hero-content h1 {
   margin: 0;
   max-width: 680px;
-  font-size: 42px;
-  line-height: 1.08;
+  font-size: clamp(44px, 8vw, 86px);
+  line-height: 0.95;
   letter-spacing: 0;
+  font-weight: 900;
 }
 
 .auth-hero-content p {
   max-width: 520px;
   color: rgba(255, 255, 255, 0.82);
   margin: 14px 0 0;
+  font-size: 18px;
 }
 
 .auth-feature-grid {
@@ -122,6 +127,10 @@ a {
   border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.1);
   font-weight: 750;
+}
+
+.dashboard-grid-wide > .card:only-child {
+  grid-column: 1 / -1;
 }
 
 .login-card {

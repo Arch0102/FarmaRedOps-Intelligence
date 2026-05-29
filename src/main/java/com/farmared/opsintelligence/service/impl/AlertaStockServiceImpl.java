@@ -49,12 +49,16 @@ public class AlertaStockServiceImpl implements AlertaStockService {
 
     @Override
     public void evaluarInventario(Inventario inventario) {
+        if (inventario == null || inventario.getMedicamento() == null || inventario.getCentroDistribucion() == null) {
+            return;
+        }
+
         int stockActual = nullSafe(inventario.getStockActual());
         Medicamento medicamento = inventario.getMedicamento();
         CentroDistribucion centro = inventario.getCentroDistribucion();
 
         if (stockActual <= 0) {
-            crearAlertaSiNoExiste(inventario, TipoAlerta.QUIEBRE_STOCK,
+            crearAlertaSiNoExiste(inventario, TipoAlerta.STOCK_CRITICO,
                     "Quiebre de stock para " + medicamento.getNombre()
                             + " en " + centro.getNombre()
                             + ". Stock actual: " + stockActual + ".");
@@ -69,7 +73,7 @@ public class AlertaStockServiceImpl implements AlertaStockService {
         }
 
         if (stockActual <= nullSafe(medicamento.getPuntoReorden())) {
-            crearAlertaSiNoExiste(inventario, TipoAlerta.PUNTO_REORDEN,
+            crearAlertaSiNoExiste(inventario, TipoAlerta.STOCK_CRITICO,
                     "Punto de reorden alcanzado para " + medicamento.getNombre()
                             + " en " + centro.getNombre()
                             + ". Stock actual: " + stockActual
@@ -83,6 +87,10 @@ public class AlertaStockServiceImpl implements AlertaStockService {
     }
 
     private void crearAlertaSiNoExiste(Inventario inventario, TipoAlerta tipoAlerta, String mensaje) {
+        if (inventario.getMedicamento() == null || inventario.getCentroDistribucion() == null) {
+            return;
+        }
+
         boolean existePendiente = alertaStockRepository
                 .existsByMedicamentoIdAndCentroDistribucionIdAndTipoAlertaAndEstadoAlerta(
                         inventario.getMedicamento().getId(),

@@ -41,6 +41,21 @@ services:
     networks:
       - farmared-network
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8081/api/v1
+    container_name: farmared-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+    networks:
+      - farmared-network
+
 volumes:
   farmared_postgres_data:
 

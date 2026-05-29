@@ -81,11 +81,6 @@ export default function Dashboard() {
     return Object.entries(source).map(([nombre, total]) => ({ nombre, total }));
   }, [resumen]);
 
-  const stockPorCentro = useMemo(() => {
-    const source = resumen?.stockPorCentro || {};
-    return Object.entries(source).map(([nombre, total]) => ({ nombre, total }));
-  }, [resumen]);
-
   const totalOrdenes = useMemo(
     () => ordenesPorEstado.reduce((sum, item) => sum + Number(item.total || 0), 0),
     [ordenesPorEstado]
@@ -224,25 +219,6 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <EmptyState title="Sin stock por categoria" message="No hay inventario agregado por categoria." />
-              )}
-            </Card>
-
-            <Card>
-              <CardHeader title="Stock por centro" subtitle="Disponibilidad consolidada por centro de distribucion." meta={`${formatNumber(stockPorCentro.length)} centros`} />
-              {stockPorCentro.length ? (
-                <div className="chart-shell chart-shell-sm">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={stockPorCentro} layout="vertical" margin={{ top: 10, right: 14, left: 26, bottom: 10 }}>
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                      <XAxis type="number" allowDecimals={false} />
-                      <YAxis type="category" dataKey="nombre" width={132} tick={{ fontSize: 12 }} />
-                      <Tooltip formatter={(value) => [formatNumber(value), 'Stock']} />
-                      <Bar dataKey="total" radius={[0, 6, 6, 0]} fill="#2563eb" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <EmptyState title="Sin stock por centro" message="No hay inventario agregado por centro." />
               )}
             </Card>
           </div>

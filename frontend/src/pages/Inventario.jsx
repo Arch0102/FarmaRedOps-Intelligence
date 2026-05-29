@@ -289,7 +289,7 @@ export default function Inventario() {
         </Card>
 
         <Card>
-          <CardHeader title="Consulta de kardex" subtitle="Historial de movimientos por inventario seleccionado." meta="Datos reales" />
+          <CardHeader title="Kardex" subtitle="Consulta y resultado del historial de movimientos." meta={`${formatNumber((kardex || []).length)} movimientos`} />
           <form className="inline-form" onSubmit={buscarKardex}>
             <Select value={kardexId} onChange={(event) => setKardexId(event.target.value)} required>
               <option value="">Selecciona inventario</option>
@@ -300,6 +300,21 @@ export default function Inventario() {
             <Button type="submit" disabled={loading}><Search size={16} />Consultar</Button>
           </form>
           <p className="muted-note">Un inventario representa el stock de un medicamento en un centro de distribucion.</p>
+          <Table
+            rows={kardex || []}
+            compact
+            columns={[
+              { key: 'fechaMovimiento', header: 'Fecha', render: (row) => formatDateTime(row.fechaMovimiento) },
+              { key: 'tipoMovimiento', header: 'Tipo', render: (row) => <Badge className="movement-type" tone={movementTone(row.tipoMovimiento)}>{formatMovement(row.tipoMovimiento)}</Badge> },
+              { key: 'medicamentoNombre', header: 'Medicamento' },
+              { key: 'centroDistribucionNombre', header: 'Centro' },
+              { key: 'numeroLote', header: 'Lote', render: (row) => <span className="code-chip">{row.numeroLote}</span> },
+              { key: 'cantidad', header: 'Cantidad', align: 'right', render: (row) => formatNumber(row.cantidad) },
+              { key: 'stockDespues', header: 'Stock despues', align: 'right', render: (row) => formatNumber(row.stockDespues) },
+            ]}
+            emptyTitle="Sin kardex cargado"
+            emptyMessage="Selecciona un inventario para visualizar su kardex."
+          />
         </Card>
       </div>
 
@@ -342,24 +357,6 @@ export default function Inventario() {
         />
       </Card>
 
-      <Card>
-        <CardHeader title="Kardex consultado" subtitle="Movimientos ordenados por fecha segun respuesta del backend." meta={`${formatNumber((kardex || []).length)} movimientos`} />
-        <Table
-          rows={kardex || []}
-          compact
-          columns={[
-            { key: 'fechaMovimiento', header: 'Fecha', render: (row) => formatDateTime(row.fechaMovimiento) },
-            { key: 'tipoMovimiento', header: 'Tipo', render: (row) => <Badge className="movement-type" tone={movementTone(row.tipoMovimiento)}>{formatMovement(row.tipoMovimiento)}</Badge> },
-            { key: 'medicamentoNombre', header: 'Medicamento' },
-            { key: 'centroDistribucionNombre', header: 'Centro' },
-            { key: 'numeroLote', header: 'Lote', render: (row) => <span className="code-chip">{row.numeroLote}</span> },
-            { key: 'cantidad', header: 'Cantidad', align: 'right', render: (row) => formatNumber(row.cantidad) },
-            { key: 'stockDespues', header: 'Stock despues', align: 'right', render: (row) => formatNumber(row.stockDespues) },
-          ]}
-          emptyTitle="Sin kardex cargado"
-          emptyMessage="Selecciona un inventario para visualizar su kardex."
-        />
-      </Card>
     </div>
   );
 }

@@ -1,8 +1,8 @@
 package com.farmared.opsintelligence.service.impl;
 
+import com.farmared.opsintelligence.dto.response.AlertaStockResponse;
 import com.farmared.opsintelligence.dto.response.DashboardMetricaResponse;
 import com.farmared.opsintelligence.dto.response.DashboardResumenResponse;
-import com.farmared.opsintelligence.dto.response.AlertaStockResponse;
 import com.farmared.opsintelligence.dto.response.MedicamentoRotacionResponse;
 import com.farmared.opsintelligence.dto.response.MovimientoInventarioResponse;
 import com.farmared.opsintelligence.dto.response.StockMedicamentoResumenResponse;
@@ -35,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,11 +70,12 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
                 .size();
 
         long totalOrdenesPendientes = ordenCompraRepository.countByEstado(EstadoOrdenCompra.PENDIENTE);
-        BigDecimal valorTotalOrdenesPendientes =
-                ordenCompraRepository.sumTotalByEstado(EstadoOrdenCompra.PENDIENTE);
+        BigDecimal valorTotalOrdenesPendientes = ordenCompraRepository.sumTotalByEstado(EstadoOrdenCompra.PENDIENTE);
         if (valorTotalOrdenesPendientes == null) {
             valorTotalOrdenesPendientes = BigDecimal.ZERO;
         }
+
+        List<Inventario> inventarios = inventarioRepository.findAllWithDetails();
 
         long totalAlertasPendientes = alertaStockRepository.countByEstadoAlerta(EstadoAlerta.PENDIENTE);
         Map<String, Long> ordenesPorEstado = obtenerOrdenesPorEstado();
@@ -82,9 +84,10 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
                 .stream()
                 .map(this::toMovimientoResponse)
                 .toList();
-        List<StockMedicamentoResumenResponse> medicamentosProximosAgotarse = inventarioRepository
-                .findInventariosProximosAgotarse()
+        List<StockMedicamentoResumenResponse> medicamentosProximosAgotarse = inventarios
                 .stream()
+                .filter(this::esProximoAgotarse)
+                .sorted(Comparator.comparingInt(inventario -> nullSafe(inventario.getStockDisponible(), inventario.getStockActual())))
                 .limit(8)
                 .map(this::toStockResumenResponse)
                 .toList();
@@ -155,21 +158,21 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
                 TipoMetricaDashboard.STOCK_CRITICO,
                 BigDecimal.valueOf(resumen.totalStockCritico()),
                 "inventarios",
-                "Cantidad de inventarios con stock igual o inferior al punto de reorden"
+                "Cantidad de inventarios con stock igual o inferior al minimo"
         );
 
         guardarMetrica(
                 TipoMetricaDashboard.PROXIMO_VENCIMIENTO,
                 BigDecimal.valueOf(resumen.totalLotesProximosVencer()),
                 "lotes",
-                "Cantidad de lotes próximos a vencer en los próximos " + DIAS_PROXIMO_VENCIMIENTO + " días"
+                "Cantidad de lotes proximos a vencer en los proximos " + DIAS_PROXIMO_VENCIMIENTO + " dias"
         );
 
         guardarMetrica(
                 TipoMetricaDashboard.ORDENES_PENDIENTES,
                 BigDecimal.valueOf(resumen.totalOrdenesPendientes()),
-                "órdenes",
-                "Cantidad de órdenes de compra pendientes"
+                "ordenes",
+                "Cantidad de ordenes de compra pendientes"
         );
 
         return listarMetricas();
@@ -183,7 +186,7 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
     ) {
         DashboardMetrica metrica = new DashboardMetrica();
         metrica.setTipoMetrica(tipoMetrica);
-        metrica.setValor(valor);
+        metrica.setValor(valor != null ? valor : BigDecimal.ZERO);
         metrica.setUnidad(unidad);
         metrica.setDescripcion(descripcion);
         metrica.setFechaCalculo(LocalDateTime.now());
@@ -194,6 +197,10 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
     private Map<String, Long> obtenerOrdenesPorEstado() {
         Map<EstadoOrdenCompra, Long> conteos = new LinkedHashMap<>();
         for (Object[] row : ordenCompraRepository.countByEstadoGrouped()) {
+            if (row == null || row.length < 2 || row[0] == null || row[1] == null) {
+                continue;
+            }
+
             EstadoOrdenCompra estado = (EstadoOrdenCompra) row[0];
             long total = ((Number) row[1]).longValue();
             if (total > 0) {
@@ -215,6 +222,10 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
     private Map<String, Long> toMap(List<Object[]> rows) {
         Map<String, Long> response = new LinkedHashMap<>();
         for (Object[] row : rows) {
+            if (row == null || row.length < 2) {
+                continue;
+            }
+
             String key = row[0] != null ? String.valueOf(row[0]) : "Sin clasificar";
             long value = row[1] != null ? ((Number) row[1]).longValue() : 0L;
             response.put(key, value);
@@ -222,33 +233,51 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
         return response;
     }
 
+    private boolean esProximoAgotarse(Inventario inventario) {
+        Medicamento medicamento = inventario.getMedicamento();
+        if (medicamento == null) {
+            return false;
+        }
+
+        Integer umbral = medicamento.getPuntoReorden() != null
+                ? medicamento.getPuntoReorden()
+                : medicamento.getStockMinimo();
+
+        if (umbral == null) {
+            return false;
+        }
+
+        int stock = nullSafe(inventario.getStockDisponible(), inventario.getStockActual());
+        return stock <= umbral;
+    }
+
     private StockMedicamentoResumenResponse toStockResumenResponse(Inventario inventario) {
         Medicamento medicamento = inventario.getMedicamento();
         CentroDistribucion centro = inventario.getCentroDistribucion();
-        String categoriaNombre = medicamento.getCategoriaMedicamento() != null
+        String categoriaNombre = medicamento != null && medicamento.getCategoriaMedicamento() != null
                 ? medicamento.getCategoriaMedicamento().getNombre()
                 : "Sin categoria";
 
         return new StockMedicamentoResumenResponse(
                 inventario.getId(),
-                medicamento.getId(),
-                medicamento.getCodigo(),
-                medicamento.getNombre(),
+                medicamento != null ? medicamento.getId() : null,
+                medicamento != null ? medicamento.getCodigo() : null,
+                medicamento != null ? medicamento.getNombre() : "Sin medicamento",
                 categoriaNombre,
-                centro.getId(),
-                centro.getNombre(),
-                inventario.getStockActual(),
-                medicamento.getStockMinimo(),
-                medicamento.getPuntoReorden()
+                centro != null ? centro.getId() : null,
+                centro != null ? centro.getNombre() : "Sin centro",
+                nullSafe(inventario.getStockActual(), 0),
+                medicamento != null ? medicamento.getStockMinimo() : null,
+                medicamento != null ? medicamento.getPuntoReorden() : null
         );
     }
 
     private MedicamentoRotacionResponse toRotacionResponse(Object[] row) {
         return new MedicamentoRotacionResponse(
-                row[0] != null ? ((Number) row[0]).longValue() : null,
-                row[1] != null ? String.valueOf(row[1]) : null,
-                row[2] != null ? String.valueOf(row[2]) : null,
-                row[3] != null ? ((Number) row[3]).longValue() : 0L
+                row != null && row.length > 0 && row[0] != null ? ((Number) row[0]).longValue() : null,
+                row != null && row.length > 1 && row[1] != null ? String.valueOf(row[1]) : null,
+                row != null && row.length > 2 && row[2] != null ? String.valueOf(row[2]) : null,
+                row != null && row.length > 3 && row[3] != null ? ((Number) row[3]).longValue() : 0L
         );
     }
 
@@ -262,11 +291,11 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
                 alerta.getTipoAlerta(),
                 alerta.getEstadoAlerta(),
                 alerta.getMensaje(),
-                medicamento.getId(),
-                medicamento.getCodigo(),
-                medicamento.getNombre(),
-                centro.getId(),
-                centro.getNombre(),
+                medicamento != null ? medicamento.getId() : null,
+                medicamento != null ? medicamento.getCodigo() : null,
+                medicamento != null ? medicamento.getNombre() : "Sin medicamento",
+                centro != null ? centro.getId() : null,
+                centro != null ? centro.getNombre() : "Sin centro",
                 lote != null ? lote.getId() : null,
                 lote != null ? lote.getNumeroLote() : null,
                 alerta.getFechaGeneracion(),
@@ -277,6 +306,8 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
     private MovimientoInventarioResponse toMovimientoResponse(MovimientoInventario movimiento) {
         Inventario inventario = movimiento.getInventario();
         LoteMedicamento lote = movimiento.getLoteMedicamento();
+        Medicamento medicamento = inventario != null ? inventario.getMedicamento() : null;
+        CentroDistribucion centro = inventario != null ? inventario.getCentroDistribucion() : null;
 
         return new MovimientoInventarioResponse(
                 movimiento.getId(),
@@ -288,17 +319,14 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
                 movimiento.getObservacion(),
                 movimiento.getUsuarioResponsable(),
                 movimiento.getFechaMovimiento(),
-
-                inventario.getId(),
-                inventario.getMedicamento().getId(),
-                inventario.getMedicamento().getCodigo(),
-                inventario.getMedicamento().getNombre(),
-
-                lote.getId(),
-                lote.getNumeroLote(),
-
-                inventario.getCentroDistribucion().getId(),
-                inventario.getCentroDistribucion().getNombre()
+                inventario != null ? inventario.getId() : null,
+                medicamento != null ? medicamento.getId() : null,
+                medicamento != null ? medicamento.getCodigo() : null,
+                medicamento != null ? medicamento.getNombre() : "Sin medicamento",
+                lote != null ? lote.getId() : null,
+                lote != null ? lote.getNumeroLote() : null,
+                centro != null ? centro.getId() : null,
+                centro != null ? centro.getNombre() : "Sin centro"
         );
     }
 
@@ -321,5 +349,12 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
                 centroId,
                 centroNombre
         );
+    }
+
+    private int nullSafe(Integer preferred, Integer fallback) {
+        if (preferred != null) {
+            return preferred;
+        }
+        return fallback != null ? fallback : 0;
     }
 }

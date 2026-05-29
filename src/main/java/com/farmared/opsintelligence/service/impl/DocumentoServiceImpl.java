@@ -143,9 +143,6 @@ public class DocumentoServiceImpl implements DocumentoService {
         lineas.add("Ordenes por estado:");
         resumen.ordenesPorEstado().forEach((estado, total) -> lineas.add("- " + estado + ": " + total));
         lineas.add("");
-        lineas.add("Stock por centro:");
-        resumen.stockPorCentro().forEach((centro, total) -> lineas.add("- " + centro + ": " + total));
-        lineas.add("");
         lineas.add("Alertas recientes:");
         resumen.alertasStock().stream()
                 .limit(5)

@@ -2,6 +2,7 @@ package com.farmared.opsintelligence.controller;
 
 import com.farmared.opsintelligence.dto.response.DashboardMetricaResponse;
 import com.farmared.opsintelligence.dto.response.DashboardResumenResponse;
+import com.farmared.opsintelligence.dto.response.ApiResponse;
 import com.farmared.opsintelligence.entity.enums.TipoMetricaDashboard;
 import com.farmared.opsintelligence.service.DashboardMetricaService;
 import lombok.RequiredArgsConstructor;
@@ -40,8 +41,8 @@ public class DashboardMetricaController {
     }
 
     @PostMapping("/metricas/recalcular")
-    public ResponseEntity<List<DashboardMetricaResponse>> recalcularMetricas() {
+    public ResponseEntity<ApiResponse<List<DashboardMetricaResponse>>> recalcularMetricas() {
         List<DashboardMetricaResponse> response = dashboardMetricaService.recalcularMetricas();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.ok("Metricas recalculadas correctamente", response));
     }
 }
