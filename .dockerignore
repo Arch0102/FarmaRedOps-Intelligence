@@ -1,0 +1,8 @@
+target
+.git
+.idea
+*.iml
+node_modules
+dist
+.env
+.DS_Store

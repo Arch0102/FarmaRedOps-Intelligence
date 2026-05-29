@@ -1,0 +1,22 @@
+warning: in the working copy of 'src/main/java/com/farmared/opsintelligence/dto/response/AuthResponse.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/main/java/com/farmared/opsintelligence/dto/response/DashboardResumenResponse.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/main/java/com/farmared/opsintelligence/repository/AlertaStockRepository.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/main/java/com/farmared/opsintelligence/repository/InventarioRepository.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/main/java/com/farmared/opsintelligence/repository/MedicamentoRepository.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/main/java/com/farmared/opsintelligence/repository/MovimientoInventarioRepository.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/main/java/com/farmared/opsintelligence/repository/OrdenCompraRepository.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/main/java/com/farmared/opsintelligence/repository/ProveedorRepository.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/main/java/com/farmared/opsintelligence/service/impl/AuthServiceImpl.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/main/java/com/farmared/opsintelligence/service/impl/DashboardMetricaServiceImpl.java', LF will be replaced by CRLF the next time Git touches it
+frontend/.env
+src/main/java/com/farmared/opsintelligence/config/SecurityConfig.java
+src/main/java/com/farmared/opsintelligence/dto/response/AuthResponse.java
+src/main/java/com/farmared/opsintelligence/dto/response/DashboardResumenResponse.java
+src/main/java/com/farmared/opsintelligence/repository/AlertaStockRepository.java
+src/main/java/com/farmared/opsintelligence/repository/InventarioRepository.java
+src/main/java/com/farmared/opsintelligence/repository/MedicamentoRepository.java
+src/main/java/com/farmared/opsintelligence/repository/MovimientoInventarioRepository.java
+src/main/java/com/farmared/opsintelligence/repository/OrdenCompraRepository.java
+src/main/java/com/farmared/opsintelligence/repository/ProveedorRepository.java
+src/main/java/com/farmared/opsintelligence/service/impl/AuthServiceImpl.java
+src/main/java/com/farmared/opsintelligence/service/impl/DashboardMetricaServiceImpl.java
