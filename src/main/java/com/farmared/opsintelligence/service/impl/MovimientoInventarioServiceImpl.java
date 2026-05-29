@@ -2,20 +2,17 @@ package com.farmared.opsintelligence.service.impl;
 
 import com.farmared.opsintelligence.dto.request.MovimientoInventarioRequest;
 import com.farmared.opsintelligence.dto.response.MovimientoInventarioResponse;
-import com.farmared.opsintelligence.entity.AlertaStock;
 import com.farmared.opsintelligence.entity.Inventario;
 import com.farmared.opsintelligence.entity.LoteMedicamento;
 import com.farmared.opsintelligence.entity.MovimientoInventario;
-import com.farmared.opsintelligence.entity.enums.EstadoAlerta;
 import com.farmared.opsintelligence.entity.enums.EstadoLote;
-import com.farmared.opsintelligence.entity.enums.TipoAlerta;
 import com.farmared.opsintelligence.entity.enums.TipoMovimiento;
 import com.farmared.opsintelligence.exception.BusinessRuleException;
 import com.farmared.opsintelligence.exception.ResourceNotFoundException;
-import com.farmared.opsintelligence.repository.AlertaStockRepository;
 import com.farmared.opsintelligence.repository.InventarioRepository;
 import com.farmared.opsintelligence.repository.LoteMedicamentoRepository;
 import com.farmared.opsintelligence.repository.MovimientoInventarioRepository;
+import com.farmared.opsintelligence.service.AlertaStockService;
 import com.farmared.opsintelligence.service.MovimientoInventarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,7 +30,7 @@ public class MovimientoInventarioServiceImpl implements MovimientoInventarioServ
     private final InventarioRepository inventarioRepository;
     private final LoteMedicamentoRepository loteMedicamentoRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
-    private final AlertaStockRepository alertaStockRepository;
+    private final AlertaStockService alertaStockService;
 
     @Override
     public MovimientoInventarioResponse registrarMovimiento(MovimientoInventarioRequest request) {
@@ -68,7 +65,7 @@ public class MovimientoInventarioServiceImpl implements MovimientoInventarioServ
 
         MovimientoInventario movimientoGuardado = movimientoInventarioRepository.save(movimiento);
 
-        generarAlertaStockCriticoSiAplica(inventario);
+        alertaStockService.evaluarInventario(inventario);
 
         return toMovimientoResponse(movimientoGuardado);
     }
@@ -178,44 +175,6 @@ public class MovimientoInventarioServiceImpl implements MovimientoInventarioServ
         }
 
         loteMedicamentoRepository.save(lote);
-    }
-
-    private void generarAlertaStockCriticoSiAplica(Inventario inventario) {
-        Integer stockActual = inventario.getStockActual();
-        Integer puntoReorden = inventario.getMedicamento().getPuntoReorden();
-
-        if (stockActual > puntoReorden) {
-            return;
-        }
-
-        boolean alertaPendienteExiste = alertaStockRepository
-                .existsByMedicamentoIdAndCentroDistribucionIdAndTipoAlertaAndEstadoAlerta(
-                        inventario.getMedicamento().getId(),
-                        inventario.getCentroDistribucion().getId(),
-                        TipoAlerta.STOCK_CRITICO,
-                        EstadoAlerta.PENDIENTE
-                );
-
-        if (alertaPendienteExiste) {
-            return;
-        }
-
-        AlertaStock alerta = new AlertaStock();
-        alerta.setTipoAlerta(TipoAlerta.STOCK_CRITICO);
-        alerta.setEstadoAlerta(EstadoAlerta.PENDIENTE);
-        alerta.setMedicamento(inventario.getMedicamento());
-        alerta.setCentroDistribucion(inventario.getCentroDistribucion());
-        alerta.setFechaGeneracion(LocalDateTime.now());
-        alerta.setMensaje(
-                "Stock crítico para el medicamento "
-                        + inventario.getMedicamento().getNombre()
-                        + ". Stock actual: "
-                        + stockActual
-                        + ", punto de reorden: "
-                        + puntoReorden
-        );
-
-        alertaStockRepository.save(alerta);
     }
 
     private MovimientoInventarioResponse toMovimientoResponse(MovimientoInventario movimiento) {

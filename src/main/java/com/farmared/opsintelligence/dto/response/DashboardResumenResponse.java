@@ -14,6 +14,12 @@ public record DashboardResumenResponse(
         Long totalAlertasPendientes,
         BigDecimal valorTotalOrdenesPendientes,
         Map<String, Long> ordenesPorEstado,
-        List<MovimientoInventarioResponse> movimientosRecientes
+        List<MovimientoInventarioResponse> movimientosRecientes,
+        List<StockMedicamentoResumenResponse> medicamentosProximosAgotarse,
+        List<StockMedicamentoResumenResponse> medicamentosEnQuiebre,
+        List<MedicamentoRotacionResponse> medicamentosMayorRotacion,
+        Map<String, Long> stockPorCategoria,
+        Map<String, Long> stockPorCentro,
+        List<AlertaStockResponse> alertasStock
 ) {
 }

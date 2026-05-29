@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Database, Download, FileCheck2, FilePlus2, FileText, Gauge, RefreshCcw, Trash2 } from 'lucide-react';
+import { Download, FilePlus2, FileText, RefreshCcw, Trash2 } from 'lucide-react';
 import { documentoService } from '../api/documentoService';
 import Button from '../components/ui/Button';
 import Card, { CardHeader } from '../components/ui/Card';
@@ -35,6 +35,7 @@ export default function Documentos() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [generatingReport, setGeneratingReport] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
@@ -120,13 +121,30 @@ export default function Documentos() {
   async function generateDashboardReport() {
     setError('');
     setNotice('');
+    setGeneratingReport(true);
     try {
-      const result = await documentoService.generateDashboardReport();
-      setNotice(result.message || 'Reporte generado correctamente.');
-      await load();
+      const response = await documentoService.generateDashboardReport();
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = getFilename(response.headers?.['content-disposition']) || 'reporte-dashboard.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setNotice('Reporte dashboard descargado correctamente.');
     } catch (exception) {
-      setError(exception.status === 404 ? 'Generacion PDF pendiente de endpoint backend.' : exception.userMessage || 'No fue posible generar el PDF.');
+      setError(exception.userMessage || 'No fue posible generar el reporte dashboard en PDF.');
+    } finally {
+      setGeneratingReport(false);
     }
+  }
+
+  function getFilename(contentDisposition) {
+    if (!contentDisposition) return null;
+    const match = /filename="?([^"]+)"?/i.exec(contentDisposition);
+    return match?.[1] || null;
   }
 
   if (loading) return <Loading />;
@@ -138,16 +156,15 @@ export default function Documentos() {
           <h1>Documentos</h1>
           <p>Gestion de PDFs operativos, soportes y reportes.</p>
         </div>
-        <Button variant="secondary" onClick={generateDashboardReport}>
+        <Button variant="secondary" onClick={generateDashboardReport} disabled={generatingReport}>
           <RefreshCcw size={16} />
-          Generar reporte dashboard
+          {generatingReport ? 'Generando...' : 'Generar reporte dashboard'}
         </Button>
       </div>
       <ErrorMessage message={error} />
       {notice && <div className="success-message">{notice}</div>}
 
-      <div className="two-column-grid document-grid">
-        <Card>
+      <Card>
           <CardHeader title="Subir documento" subtitle="Archivo PDF con metadatos operativos para trazabilidad." meta="Validacion backend" />
           <form className="grid-form single" onSubmit={upload}>
             <label className="file-drop">
@@ -165,42 +182,7 @@ export default function Documentos() {
             <Input label="Usuario carga" value={metadata.usuarioCarga} onChange={(event) => setField('usuarioCarga', event.target.value)} required />
             <Button type="submit" disabled={saving}>{saving ? 'Subiendo...' : 'Subir documento'}</Button>
           </form>
-        </Card>
-
-        <Card>
-          <CardHeader title="Estado del modulo" subtitle="Capacidades activas de documentos y reportes." />
-          <div className="info-list">
-            <div className="info-row">
-              <Database size={18} />
-              <div>
-                <strong>Descarga binaria preservada</strong>
-                <span>La descarga usa `responseType: blob` para conservar el PDF sin envoltorios JSON.</span>
-              </div>
-            </div>
-            <div className="info-row">
-              <FileCheck2 size={18} />
-              <div>
-                <strong>Formato permitido</strong>
-                <span>El backend valida `application/pdf` y extension `.pdf`.</span>
-              </div>
-            </div>
-            <div className="info-row">
-              <Gauge size={18} />
-              <div>
-                <strong>Tamano maximo</strong>
-                <span>Configurado en backend para 10 MB por documento.</span>
-              </div>
-            </div>
-            <div className="info-row">
-              <CheckCircle2 size={18} />
-              <div>
-                <strong>Generador de reporte dashboard</strong>
-                <span>La UI intenta generar el reporte; si el endpoint no existe, muestra el estado pendiente sin romper la pantalla.</span>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
+      </Card>
 
       <Card>
         <CardHeader

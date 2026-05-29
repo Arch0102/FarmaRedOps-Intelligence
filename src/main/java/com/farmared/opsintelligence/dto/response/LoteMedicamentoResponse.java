@@ -6,12 +6,11 @@ import java.time.LocalDate;
 
 public record LoteMedicamentoResponse(
         Long id,
-        String numeroLote,
-
         Long medicamentoId,
         String medicamentoCodigo,
         String medicamentoNombre,
 
+        String numeroLote,
         LocalDate fechaFabricacion,
         LocalDate fechaVencimiento,
 

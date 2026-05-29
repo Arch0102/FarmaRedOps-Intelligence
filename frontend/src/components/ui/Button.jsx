@@ -3,11 +3,11 @@ export default function Button({
   variant = 'primary',
   size = 'md',
   className = '',
-  type = 'button',
+  type: buttonType = 'button',
   ...props
 }) {
   return (
-    <button type={type} className={`btn btn-${variant} btn-${size} ${className}`} {...props}>
+    <button type={buttonType} className={`btn btn-${variant} btn-${size} ${className}`} {...props}>
       {children}
     </button>
   );

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { LogIn } from 'lucide-react';
+import { Activity, Boxes, LogIn, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import Button from '../components/ui/Button';
 import ErrorMessage from '../components/ui/ErrorMessage';
@@ -30,22 +30,44 @@ export default function Login() {
       const result = await login(form);
       navigate(from || getDefaultRouteForRoles(result.user?.roles), { replace: true });
     } catch (exception) {
-      setError(exception.userMessage || exception.message || 'No fue posible iniciar sesion.');
+      setError(exception.userMessage || exception.message || 'No fue posible iniciar sesion. Verifica tus credenciales.');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="auth-page">
-      <section className="auth-panel">
+    <main className="auth-page login-shell">
+      <section className="auth-hero-panel">
+        <div className="auth-hero-content">
+          <span className="auth-kicker">Operacion farmaceutica segura</span>
+          <h1>Control de inventario, compras y trazabilidad documental.</h1>
+          <p>Acceso protegido por roles para equipos de bodega, compras y auditoria.</p>
+          <div className="auth-feature-grid">
+            <div className="auth-feature">
+              <ShieldCheck size={18} />
+              <span>JWT y permisos operativos</span>
+            </div>
+            <div className="auth-feature">
+              <Boxes size={18} />
+              <span>Inventario por centro y lote</span>
+            </div>
+            <div className="auth-feature">
+              <Activity size={18} />
+              <span>Dashboard con alertas reales</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="auth-panel login-card">
         <div className="auth-brand">
           <div className="brand-mark large">
             <LogIn size={26} />
           </div>
           <div>
-            <h1>FarmaRed Ops-Intelligence</h1>
-            <p>Ingresa para operar inventario, compras y documentos.</p>
+            <h1>Iniciar sesion</h1>
+            <p>FarmaRed Ops-Intelligence</p>
           </div>
         </div>
 
@@ -66,8 +88,9 @@ export default function Login() {
             autoComplete="current-password"
           />
           <ErrorMessage message={error} />
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Validando...' : 'Iniciar sesion'}
+          <Button type="submit" disabled={loading} className="auth-submit">
+            <LogIn size={16} />
+            {loading ? 'Validando acceso...' : 'Iniciar sesion'}
           </Button>
         </form>
 

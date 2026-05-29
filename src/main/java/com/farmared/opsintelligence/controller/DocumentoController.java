@@ -58,6 +58,20 @@ public class DocumentoController {
                 .body(resource);
     }
 
+    @PostMapping(value = "/generar/dashboard", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> generarReporteDashboard() {
+        byte[] pdf = documentoService.generarReporteDashboardPdf();
+        ContentDisposition contentDisposition = ContentDisposition
+                .attachment()
+                .filename("reporte-dashboard.pdf")
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
+                .body(pdf);
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<DocumentoResponse> actualizarDocumento(
             @PathVariable Long id,

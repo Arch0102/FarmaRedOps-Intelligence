@@ -36,7 +36,7 @@ export const documentoService = {
     return axiosClient.get(`/documentos/${id}/download`, { responseType: 'blob' });
   },
 
-  generateDashboardReport() {
-    return getResult(axiosClient.post('/documentos/generar/dashboard'));
+  async generateDashboardReport() {
+    return axiosClient.post('/documentos/generar/dashboard', null, { responseType: 'blob' });
   },
 };

@@ -1,24 +1,15 @@
 package com.farmared.opsintelligence.dto.response;
 
-import java.time.LocalDateTime;
-
-public record InventarioResponse(
-        Long id,
-
+public record StockMedicamentoResumenResponse(
+        Long inventarioId,
         Long medicamentoId,
         String medicamentoCodigo,
         String medicamentoNombre,
-
+        String categoriaNombre,
         Long centroDistribucionId,
         String centroDistribucionNombre,
-
         Integer stockActual,
-        Integer stockReservado,
-        Integer stockDisponible,
         Integer stockMinimo,
-        Integer puntoReorden,
-        EstadoStock estadoStock,
-
-        LocalDateTime fechaUltimaActualizacion
+        Integer puntoReorden
 ) {
 }

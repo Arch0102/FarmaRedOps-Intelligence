@@ -2,14 +2,21 @@ package com.farmared.opsintelligence.service.impl;
 
 import com.farmared.opsintelligence.dto.response.DashboardMetricaResponse;
 import com.farmared.opsintelligence.dto.response.DashboardResumenResponse;
+import com.farmared.opsintelligence.dto.response.AlertaStockResponse;
+import com.farmared.opsintelligence.dto.response.MedicamentoRotacionResponse;
 import com.farmared.opsintelligence.dto.response.MovimientoInventarioResponse;
+import com.farmared.opsintelligence.dto.response.StockMedicamentoResumenResponse;
+import com.farmared.opsintelligence.entity.AlertaStock;
+import com.farmared.opsintelligence.entity.CentroDistribucion;
 import com.farmared.opsintelligence.entity.DashboardMetrica;
 import com.farmared.opsintelligence.entity.Inventario;
 import com.farmared.opsintelligence.entity.LoteMedicamento;
+import com.farmared.opsintelligence.entity.Medicamento;
 import com.farmared.opsintelligence.entity.MovimientoInventario;
 import com.farmared.opsintelligence.entity.enums.EstadoAlerta;
 import com.farmared.opsintelligence.entity.enums.EstadoOrdenCompra;
 import com.farmared.opsintelligence.entity.enums.TipoMetricaDashboard;
+import com.farmared.opsintelligence.entity.enums.TipoMovimiento;
 import com.farmared.opsintelligence.repository.AlertaStockRepository;
 import com.farmared.opsintelligence.repository.DashboardMetricaRepository;
 import com.farmared.opsintelligence.repository.InventarioRepository;
@@ -18,8 +25,10 @@ import com.farmared.opsintelligence.repository.MedicamentoRepository;
 import com.farmared.opsintelligence.repository.MovimientoInventarioRepository;
 import com.farmared.opsintelligence.repository.OrdenCompraRepository;
 import com.farmared.opsintelligence.repository.ProveedorRepository;
+import com.farmared.opsintelligence.service.AlertaStockService;
 import com.farmared.opsintelligence.service.DashboardMetricaService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +54,7 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
     private final OrdenCompraRepository ordenCompraRepository;
     private final AlertaStockRepository alertaStockRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
+    private final AlertaStockService alertaStockService;
 
     @Override
     @Transactional(readOnly = true)
@@ -72,6 +82,31 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
                 .stream()
                 .map(this::toMovimientoResponse)
                 .toList();
+        List<StockMedicamentoResumenResponse> medicamentosProximosAgotarse = inventarioRepository
+                .findInventariosProximosAgotarse()
+                .stream()
+                .limit(8)
+                .map(this::toStockResumenResponse)
+                .toList();
+        List<StockMedicamentoResumenResponse> medicamentosEnQuiebre = inventarioRepository
+                .findInventariosEnQuiebre()
+                .stream()
+                .limit(8)
+                .map(this::toStockResumenResponse)
+                .toList();
+        List<MedicamentoRotacionResponse> medicamentosMayorRotacion = movimientoInventarioRepository
+                .findRotacionByTipoMovimiento(TipoMovimiento.SALIDA, PageRequest.of(0, 6))
+                .stream()
+                .map(this::toRotacionResponse)
+                .toList();
+        Map<String, Long> stockPorCategoria = toMap(inventarioRepository.sumStockByCategoria());
+        Map<String, Long> stockPorCentro = toMap(inventarioRepository.sumStockByCentro());
+        List<AlertaStockResponse> alertasStock = alertaStockRepository
+                .findByEstadoAlertaWithDetails(EstadoAlerta.PENDIENTE)
+                .stream()
+                .limit(8)
+                .map(this::toAlertaResponse)
+                .toList();
 
         return new DashboardResumenResponse(
                 totalMedicamentosActivos,
@@ -83,7 +118,13 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
                 totalAlertasPendientes,
                 valorTotalOrdenesPendientes,
                 ordenesPorEstado,
-                movimientosRecientes
+                movimientosRecientes,
+                medicamentosProximosAgotarse,
+                medicamentosEnQuiebre,
+                medicamentosMayorRotacion,
+                stockPorCategoria,
+                stockPorCentro,
+                alertasStock
         );
     }
 
@@ -107,6 +148,7 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
 
     @Override
     public List<DashboardMetricaResponse> recalcularMetricas() {
+        alertaStockService.evaluarInventarios();
         DashboardResumenResponse resumen = obtenerResumenGeneral();
 
         guardarMetrica(
@@ -168,6 +210,68 @@ public class DashboardMetricaServiceImpl implements DashboardMetricaService {
         }
 
         return response;
+    }
+
+    private Map<String, Long> toMap(List<Object[]> rows) {
+        Map<String, Long> response = new LinkedHashMap<>();
+        for (Object[] row : rows) {
+            String key = row[0] != null ? String.valueOf(row[0]) : "Sin clasificar";
+            long value = row[1] != null ? ((Number) row[1]).longValue() : 0L;
+            response.put(key, value);
+        }
+        return response;
+    }
+
+    private StockMedicamentoResumenResponse toStockResumenResponse(Inventario inventario) {
+        Medicamento medicamento = inventario.getMedicamento();
+        CentroDistribucion centro = inventario.getCentroDistribucion();
+        String categoriaNombre = medicamento.getCategoriaMedicamento() != null
+                ? medicamento.getCategoriaMedicamento().getNombre()
+                : "Sin categoria";
+
+        return new StockMedicamentoResumenResponse(
+                inventario.getId(),
+                medicamento.getId(),
+                medicamento.getCodigo(),
+                medicamento.getNombre(),
+                categoriaNombre,
+                centro.getId(),
+                centro.getNombre(),
+                inventario.getStockActual(),
+                medicamento.getStockMinimo(),
+                medicamento.getPuntoReorden()
+        );
+    }
+
+    private MedicamentoRotacionResponse toRotacionResponse(Object[] row) {
+        return new MedicamentoRotacionResponse(
+                row[0] != null ? ((Number) row[0]).longValue() : null,
+                row[1] != null ? String.valueOf(row[1]) : null,
+                row[2] != null ? String.valueOf(row[2]) : null,
+                row[3] != null ? ((Number) row[3]).longValue() : 0L
+        );
+    }
+
+    private AlertaStockResponse toAlertaResponse(AlertaStock alerta) {
+        Medicamento medicamento = alerta.getMedicamento();
+        CentroDistribucion centro = alerta.getCentroDistribucion();
+        LoteMedicamento lote = alerta.getLoteMedicamento();
+
+        return new AlertaStockResponse(
+                alerta.getId(),
+                alerta.getTipoAlerta(),
+                alerta.getEstadoAlerta(),
+                alerta.getMensaje(),
+                medicamento.getId(),
+                medicamento.getCodigo(),
+                medicamento.getNombre(),
+                centro.getId(),
+                centro.getNombre(),
+                lote != null ? lote.getId() : null,
+                lote != null ? lote.getNumeroLote() : null,
+                alerta.getFechaGeneracion(),
+                alerta.getFechaResolucion()
+        );
     }
 
     private MovimientoInventarioResponse toMovimientoResponse(MovimientoInventario movimiento) {

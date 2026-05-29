@@ -18,6 +18,8 @@ public interface DocumentoService {
 
     Resource descargarDocumento(Long id);
 
+    byte[] generarReporteDashboardPdf();
+
     DocumentoResponse actualizarDocumento(Long id, DocumentoUpdateRequest request);
 
     void eliminarDocumento(Long id);

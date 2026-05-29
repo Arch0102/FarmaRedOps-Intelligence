@@ -56,6 +56,82 @@ a {
     #edf6f6;
 }
 
+.login-shell {
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 460px);
+  gap: 28px;
+  padding: 32px;
+}
+
+.auth-hero-panel {
+  min-height: min(720px, calc(100vh - 64px));
+  border-radius: var(--radius);
+  display: flex;
+  align-items: flex-end;
+  padding: 42px;
+  color: white;
+  background:
+    linear-gradient(145deg, rgba(6, 78, 59, 0.93), rgba(29, 78, 216, 0.78)),
+    linear-gradient(180deg, #0f766e, #1d4ed8);
+  box-shadow: var(--shadow);
+}
+
+.auth-hero-content {
+  max-width: 720px;
+}
+
+.auth-kicker {
+  display: inline-flex;
+  width: fit-content;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.auth-hero-content h1 {
+  margin: 0;
+  max-width: 680px;
+  font-size: 42px;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.auth-hero-content p {
+  max-width: 520px;
+  color: rgba(255, 255, 255, 0.82);
+  margin: 14px 0 0;
+}
+
+.auth-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.auth-feature {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 46px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.1);
+  font-weight: 750;
+}
+
+.login-card {
+  align-self: center;
+}
+
+.auth-submit {
+  width: 100%;
+}
+
 .auth-panel {
   width: min(460px, 100%);
   background: var(--white);
@@ -415,6 +491,10 @@ a {
 .chart-shell {
   height: 308px;
   margin-top: 14px;
+}
+
+.chart-shell-sm {
+  height: 250px;
 }
 
 .chart-summary,
@@ -867,6 +947,10 @@ a {
   margin: 14px 0 0;
 }
 
+.inventory-action-grid .inline-form {
+  align-items: flex-end;
+}
+
 .info-list {
   display: grid;
   gap: 12px;
@@ -943,6 +1027,23 @@ a {
 }
 
 @media (max-width: 920px) {
+  .login-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-hero-panel {
+    min-height: auto;
+    padding: 28px;
+  }
+
+  .auth-hero-content h1 {
+    font-size: 30px;
+  }
+
+  .auth-feature-grid {
+    grid-template-columns: 1fr;
+  }
+
   .sidebar {
     position: fixed;
     transform: translateX(-100%);
