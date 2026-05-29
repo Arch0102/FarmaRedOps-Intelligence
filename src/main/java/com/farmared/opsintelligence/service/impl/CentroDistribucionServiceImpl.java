@@ -25,7 +25,7 @@ public class CentroDistribucionServiceImpl implements CentroDistribucionService 
     @Override
     @Transactional(readOnly = true)
     public List<CentroDistribucionResponse> listar() {
-        return centroDistribucionRepository.findAll()
+        return centroDistribucionRepository.findByActivoTrue()
                 .stream()
                 .map(centroDistribucionMapper::toResponse)
                 .toList();

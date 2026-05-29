@@ -46,7 +46,9 @@ export default function CentrosDistribucion() {
 
   const filteredRows = useMemo(() => {
     const value = query.toLowerCase();
-    return rows.filter((item) => [item.codigo, item.nombre, item.ciudad].join(' ').toLowerCase().includes(value));
+    return rows
+      .filter((item) => item.activo !== false)
+      .filter((item) => [item.codigo, item.nombre, item.ciudad].join(' ').toLowerCase().includes(value));
   }, [query, rows]);
   const activeCount = useMemo(() => rows.filter((item) => item.activo).length, [rows]);
 
@@ -86,10 +88,10 @@ export default function CentrosDistribucion() {
   }
 
   async function remove(row) {
-    if (!window.confirm(`Desactivar centro ${row.nombre}?`)) return;
+    if (!window.confirm(`Eliminar centro ${row.nombre}? Se ocultara del listado principal sin borrar su historial.`)) return;
     try {
       const result = await centroService.remove(row.id);
-      setNotice(result.message || 'Centro desactivado.');
+      setNotice(result.message || 'Centro eliminado.');
       await load();
     } catch (exception) {
       setError(exception.userMessage || 'No tienes permisos para esta accion.');
@@ -133,7 +135,7 @@ export default function CentrosDistribucion() {
             {
               key: 'actions',
               header: 'Acciones',
-              render: (row) => canManage ? <div className="row-actions"><Button variant="ghost" size="sm" onClick={() => openEdit(row)}><Edit size={15} />Editar</Button><Button variant="danger" size="sm" onClick={() => remove(row)}><Trash2 size={15} />Desactivar</Button></div> : <Badge tone="neutral">Solo lectura</Badge>,
+              render: (row) => canManage ? <div className="row-actions"><Button variant="ghost" size="sm" onClick={() => openEdit(row)}><Edit size={15} />Editar</Button><Button variant="danger" size="sm" onClick={() => remove(row)}><Trash2 size={15} />Eliminar</Button></div> : <Badge tone="neutral">Solo lectura</Badge>,
             },
           ]}
           emptyTitle="Sin centros"

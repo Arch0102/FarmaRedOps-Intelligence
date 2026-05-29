@@ -1,10 +1,13 @@
 import axios from 'axios';
 import { clearAuthStorage, getStoredToken } from '../utils/storage';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api/v1';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  'http://localhost:8081/api/v1';
 
 const axiosClient = axios.create({
-  baseURL,
+  baseURL: API_BASE_URL,
   timeout: 15000,
 });
 

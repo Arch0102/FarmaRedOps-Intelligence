@@ -40,21 +40,21 @@ export default function Login() {
     <main className="auth-page login-shell">
       <section className="auth-hero-panel">
         <div className="auth-hero-content">
-          <span className="auth-kicker">Operacion farmaceutica segura</span>
-          <h1>Control de inventario, compras y trazabilidad documental.</h1>
-          <p>Acceso protegido por roles para equipos de bodega, compras y auditoria.</p>
+          <span className="auth-kicker">Gestion farmaceutica</span>
+          <h1>FARMARED OPS</h1>
+          <p>Inteligencia operativa para gestion farmaceutica</p>
           <div className="auth-feature-grid">
             <div className="auth-feature">
               <ShieldCheck size={18} />
-              <span>JWT y permisos operativos</span>
+              <span>Acceso seguro por roles</span>
             </div>
             <div className="auth-feature">
               <Boxes size={18} />
-              <span>Inventario por centro y lote</span>
+              <span>Inventario y lotes</span>
             </div>
             <div className="auth-feature">
               <Activity size={18} />
-              <span>Dashboard con alertas reales</span>
+              <span>Alertas operativas</span>
             </div>
           </div>
         </div>
@@ -67,7 +67,7 @@ export default function Login() {
           </div>
           <div>
             <h1>Iniciar sesion</h1>
-            <p>FarmaRed Ops-Intelligence</p>
+            <p>Accede con tu usuario operativo</p>
           </div>
         </div>
 
