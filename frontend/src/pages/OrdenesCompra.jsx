@@ -13,7 +13,7 @@ import Loading from '../components/ui/Loading';
 import Modal from '../components/ui/Modal';
 import Select from '../components/ui/Select';
 import Table from '../components/ui/Table';
-import { formatCurrency, formatDate } from '../utils/formatters';
+import { formatCurrency, formatDate, formatNumber } from '../utils/formatters';
 
 const estados = ['BORRADOR', 'PENDIENTE', 'APROBADA', 'RECIBIDA', 'CANCELADA'];
 const emptyForm = {
@@ -23,6 +23,13 @@ const emptyForm = {
   observacion: '',
   detalles: [{ medicamentoId: '', cantidad: 1, precioUnitario: 0 }],
 };
+
+function statusTone(estado) {
+  if (estado === 'RECIBIDA') return 'success';
+  if (estado === 'CANCELADA') return 'danger';
+  if (estado === 'PENDIENTE') return 'warning';
+  return 'info';
+}
 
 export default function OrdenesCompra() {
   const [rows, setRows] = useState([]);
@@ -37,6 +44,7 @@ export default function OrdenesCompra() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
+  const [query, setQuery] = useState('');
 
   async function load() {
     setLoading(true);
@@ -65,6 +73,11 @@ export default function OrdenesCompra() {
     () => form.detalles.reduce((sum, item) => sum + Number(item.cantidad || 0) * Number(item.precioUnitario || 0), 0),
     [form.detalles]
   );
+
+  const filteredRows = useMemo(() => {
+    const value = query.toLowerCase();
+    return rows.filter((item) => [item.codigo, item.proveedorNombre, item.estado].join(' ').toLowerCase().includes(value));
+  }, [query, rows]);
 
   function updateDetail(index, field, value) {
     setForm((current) => ({
@@ -154,19 +167,31 @@ export default function OrdenesCompra() {
       <Card>
         <CardHeader
           title="Compras"
-          action={<Select value={estadoFilter} onChange={(event) => setEstadoFilter(event.target.value)}><option value="">Todos los estados</option>{estados.map((estado) => <option key={estado} value={estado}>{estado}</option>)}</Select>}
+          subtitle="Ordenes emitidas con proveedor, estado y valor total."
+          meta={`${formatNumber(filteredRows.length)} de ${formatNumber(rows.length)} ordenes`}
         />
+        <div className="toolbar-panel">
+          <Input placeholder="Buscar por codigo, proveedor o estado..." value={query} onChange={(event) => setQuery(event.target.value)} />
+          <div className="toolbar-actions">
+            <Select value={estadoFilter} onChange={(event) => setEstadoFilter(event.target.value)}>
+              <option value="">Todos los estados</option>
+              {estados.map((estado) => <option key={estado} value={estado}>{estado}</option>)}
+            </Select>
+          </div>
+        </div>
         <Table
-          rows={rows}
+          rows={filteredRows}
+          compact
           columns={[
-            { key: 'codigo', header: 'Codigo' },
+            { key: 'codigo', header: 'Codigo', render: (row) => <span className="code-chip">{row.codigo}</span> },
             { key: 'proveedorNombre', header: 'Proveedor' },
-            { key: 'estado', header: 'Estado', render: (row) => <Badge tone={row.estado === 'RECIBIDA' ? 'success' : row.estado === 'CANCELADA' ? 'danger' : 'info'}>{row.estado}</Badge> },
+            { key: 'estado', header: 'Estado', render: (row) => <Badge tone={statusTone(row.estado)}>{row.estado}</Badge> },
             { key: 'fechaOrden', header: 'Fecha', render: (row) => formatDate(row.fechaOrden) },
-            { key: 'total', header: 'Total', render: (row) => formatCurrency(row.total) },
+            { key: 'total', header: 'Total', align: 'right', render: (row) => formatCurrency(row.total) },
             { key: 'actions', header: 'Acciones', render: (row) => <div className="row-actions"><Button variant="ghost" size="sm" onClick={() => viewOrder(row)}><Eye size={15} />Detalle</Button><Select value="" onChange={(event) => event.target.value && changeState(row, event.target.value)}><option value="">Cambiar estado</option>{estados.filter((estado) => estado !== row.estado).map((estado) => <option key={estado} value={estado}>{estado}</option>)}</Select></div> },
           ]}
-          emptyMessage="No hay ordenes de compra registradas."
+          emptyTitle="Sin ordenes"
+          emptyMessage="No hay ordenes que coincidan con los filtros actuales."
         />
       </Card>
 
@@ -203,17 +228,20 @@ export default function OrdenesCompra() {
       <Modal open={detailOpen} title="Detalle de orden" onClose={() => setDetailOpen(false)}>
         {selectedOrder ? (
           <div className="detail-panel">
-            <p><strong>Codigo:</strong> {selectedOrder.codigo}</p>
-            <p><strong>Proveedor:</strong> {selectedOrder.proveedorNombre}</p>
-            <p><strong>Estado:</strong> {selectedOrder.estado}</p>
-            <p><strong>Total:</strong> {formatCurrency(selectedOrder.total)}</p>
+            <div className="detail-summary">
+              <div className="detail-summary-item"><span>Codigo</span><strong>{selectedOrder.codigo}</strong></div>
+              <div className="detail-summary-item"><span>Proveedor</span><strong>{selectedOrder.proveedorNombre}</strong></div>
+              <div className="detail-summary-item"><span>Estado</span><Badge tone={statusTone(selectedOrder.estado)}>{selectedOrder.estado}</Badge></div>
+              <div className="detail-summary-item"><span>Total</span><strong>{formatCurrency(selectedOrder.total)}</strong></div>
+            </div>
             <Table
               rows={selectedOrder.detalles || []}
+              compact
               columns={[
                 { key: 'medicamentoNombre', header: 'Medicamento' },
-                { key: 'cantidad', header: 'Cantidad' },
-                { key: 'precioUnitario', header: 'Precio', render: (row) => formatCurrency(row.precioUnitario) },
-                { key: 'subtotal', header: 'Subtotal', render: (row) => formatCurrency(row.subtotal) },
+                { key: 'cantidad', header: 'Cantidad', align: 'right', render: (row) => formatNumber(row.cantidad) },
+                { key: 'precioUnitario', header: 'Precio', align: 'right', render: (row) => formatCurrency(row.precioUnitario) },
+                { key: 'subtotal', header: 'Subtotal', align: 'right', render: (row) => formatCurrency(row.subtotal) },
               ]}
             />
           </div>

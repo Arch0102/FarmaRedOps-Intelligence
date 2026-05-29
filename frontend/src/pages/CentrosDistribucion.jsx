@@ -10,6 +10,7 @@ import Input from '../components/ui/Input';
 import Loading from '../components/ui/Loading';
 import Modal from '../components/ui/Modal';
 import Table from '../components/ui/Table';
+import { formatNumber } from '../utils/formatters';
 import { ROLES } from '../utils/roles';
 
 const emptyForm = { codigo: '', nombre: '', direccion: '', ciudad: '', activo: true };
@@ -47,6 +48,7 @@ export default function CentrosDistribucion() {
     const value = query.toLowerCase();
     return rows.filter((item) => [item.codigo, item.nombre, item.ciudad].join(' ').toLowerCase().includes(value));
   }, [query, rows]);
+  const activeCount = useMemo(() => rows.filter((item) => item.activo).length, [rows]);
 
   function openCreate() {
     setEditing(null);
@@ -108,11 +110,22 @@ export default function CentrosDistribucion() {
       <ErrorMessage message={error} />
       {notice && <div className="success-message">{notice}</div>}
       <Card>
-        <CardHeader title="Red de distribucion" action={<Input placeholder="Buscar centro..." value={query} onChange={(event) => setQuery(event.target.value)} />} />
+        <CardHeader
+          title="Red de distribucion"
+          subtitle="Centros operativos para trazabilidad de inventario y movimientos."
+          meta={`${formatNumber(filteredRows.length)} de ${formatNumber(rows.length)} registros`}
+        />
+        <div className="toolbar-panel">
+          <Input placeholder="Buscar por codigo, nombre o ciudad..." value={query} onChange={(event) => setQuery(event.target.value)} />
+          <div className="toolbar-actions">
+            <span className="record-counter">{formatNumber(activeCount)} activos</span>
+          </div>
+        </div>
         <Table
           rows={filteredRows}
+          compact
           columns={[
-            { key: 'codigo', header: 'Codigo' },
+            { key: 'codigo', header: 'Codigo', render: (row) => <span className="code-chip">{row.codigo}</span> },
             { key: 'nombre', header: 'Nombre' },
             { key: 'ciudad', header: 'Ciudad' },
             { key: 'direccion', header: 'Direccion' },
@@ -120,10 +133,11 @@ export default function CentrosDistribucion() {
             {
               key: 'actions',
               header: 'Acciones',
-              render: (row) => canManage ? <div className="row-actions"><Button variant="ghost" size="sm" onClick={() => openEdit(row)}><Edit size={15} />Editar</Button><Button variant="danger" size="sm" onClick={() => remove(row)}><Trash2 size={15} />Desactivar</Button></div> : 'Solo lectura',
+              render: (row) => canManage ? <div className="row-actions"><Button variant="ghost" size="sm" onClick={() => openEdit(row)}><Edit size={15} />Editar</Button><Button variant="danger" size="sm" onClick={() => remove(row)}><Trash2 size={15} />Desactivar</Button></div> : <Badge tone="neutral">Solo lectura</Badge>,
             },
           ]}
-          emptyMessage="No hay centros registrados."
+          emptyTitle="Sin centros"
+          emptyMessage="No hay centros que coincidan con el filtro actual."
         />
       </Card>
 

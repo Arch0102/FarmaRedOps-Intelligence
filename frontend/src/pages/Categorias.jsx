@@ -10,6 +10,7 @@ import Input from '../components/ui/Input';
 import Loading from '../components/ui/Loading';
 import Modal from '../components/ui/Modal';
 import Table from '../components/ui/Table';
+import { formatNumber } from '../utils/formatters';
 import { ROLES } from '../utils/roles';
 
 const emptyForm = { nombre: '', descripcion: '', activo: true };
@@ -47,6 +48,7 @@ export default function Categorias() {
     () => rows.filter((item) => item.nombre?.toLowerCase().includes(query.toLowerCase())),
     [query, rows]
   );
+  const activeCount = useMemo(() => rows.filter((item) => item.activo).length, [rows]);
 
   function openCreate() {
     setEditing(null);
@@ -112,9 +114,20 @@ export default function Categorias() {
       <ErrorMessage message={error} />
       {notice && <div className="success-message">{notice}</div>}
       <Card>
-        <CardHeader title="Listado de categorias" action={<Input placeholder="Buscar categoria..." value={query} onChange={(event) => setQuery(event.target.value)} />} />
+        <CardHeader
+          title="Listado de categorias"
+          subtitle="Clasificaciones usadas para organizar el catalogo farmaceutico."
+          meta={`${formatNumber(filteredRows.length)} de ${formatNumber(rows.length)} registros`}
+        />
+        <div className="toolbar-panel">
+          <Input placeholder="Buscar categoria..." value={query} onChange={(event) => setQuery(event.target.value)} />
+          <div className="toolbar-actions">
+            <span className="record-counter">{formatNumber(activeCount)} activas</span>
+          </div>
+        </div>
         <Table
           rows={filteredRows}
+          compact
           columns={[
             { key: 'nombre', header: 'Nombre' },
             { key: 'descripcion', header: 'Descripcion' },
@@ -128,10 +141,11 @@ export default function Categorias() {
                     <Button variant="ghost" size="sm" onClick={() => openEdit(row)}><Edit size={15} />Editar</Button>
                     <Button variant="danger" size="sm" onClick={() => remove(row)}><Trash2 size={15} />Desactivar</Button>
                   </div>
-                ) : 'Solo lectura',
+                ) : <Badge tone="neutral">Solo lectura</Badge>,
             },
           ]}
-          emptyMessage="No hay categorias registradas."
+          emptyTitle="Sin categorias"
+          emptyMessage="No hay categorias que coincidan con el filtro actual."
         />
       </Card>
 

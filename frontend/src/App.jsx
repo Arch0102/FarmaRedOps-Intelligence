@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import RoleGuard from './auth/RoleGuard';
 import ProtectedRoute from './auth/ProtectedRoute';
+import { useAuth } from './auth/AuthContext';
 import AppLayout from './components/layout/AppLayout';
 import Categorias from './pages/Categorias';
 import CentrosDistribucion from './pages/CentrosDistribucion';
@@ -21,7 +22,13 @@ import {
   DASHBOARD_ROLES,
   INVENTORY_WRITE_ROLES,
   PURCHASE_ROLES,
+  getDefaultRouteForRoles,
 } from './utils/roles';
+
+function DefaultRedirect() {
+  const { roles } = useAuth();
+  return <Navigate to={getDefaultRouteForRoles(roles)} replace />;
+}
 
 export default function App() {
   return (
@@ -31,7 +38,7 @@ export default function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route index element={<DefaultRedirect />} />
           <Route path="/forbidden" element={<Forbidden />} />
           <Route
             path="/dashboard"

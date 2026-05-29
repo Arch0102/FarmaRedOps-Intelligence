@@ -23,12 +23,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class AuthServiceImpl implements AuthService {
+
+    private static final String DEFAULT_REGISTER_ROLE = "ROLE_AUXILIAR_BODEGA";
 
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
@@ -41,18 +42,18 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse register(RegisterRequest request) {
         if (usuarioRepository.existsByUsername(request.username())) {
-            throw new DuplicateResourceException("El username ya está registrado");
+            throw new DuplicateResourceException("El username ya esta registrado");
         }
 
         if (usuarioRepository.existsByEmail(request.email())) {
-            throw new DuplicateResourceException("El email ya está registrado");
+            throw new DuplicateResourceException("El email ya esta registrado");
         }
 
-        Rol rolUser = rolRepository.findByNombre("USER")
+        Rol rolInicial = rolRepository.findByNombre(DEFAULT_REGISTER_ROLE)
                 .orElseGet(() -> {
                     Rol nuevoRol = new Rol();
-                    nuevoRol.setNombre("USER");
-                    nuevoRol.setDescripcion("Usuario estándar del sistema");
+                    nuevoRol.setNombre(DEFAULT_REGISTER_ROLE);
+                    nuevoRol.setDescripcion("Auxiliar de bodega");
                     nuevoRol.setActivo(true);
                     return rolRepository.save(nuevoRol);
                 });
@@ -68,7 +69,7 @@ public class AuthServiceImpl implements AuthService {
 
         UsuarioRol usuarioRol = new UsuarioRol();
         usuarioRol.setUsuario(usuarioGuardado);
-        usuarioRol.setRol(rolUser);
+        usuarioRol.setRol(rolInicial);
         usuarioRolRepository.save(usuarioRol);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(usuarioGuardado.getUsername());
@@ -113,14 +114,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private List<String> obtenerRolesUsuario(Long usuarioId) {
-        return usuarioRolRepository.findByUsuarioId(usuarioId)
-                .stream()
-                .map(UsuarioRol::getRol)
-                .filter(Objects::nonNull)
-                .map(Rol::getNombre)
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(nombre -> !nombre.isBlank())
-                .toList();
+        return usuarioRolRepository.findRoleNamesByUsuarioId(usuarioId);
     }
 }

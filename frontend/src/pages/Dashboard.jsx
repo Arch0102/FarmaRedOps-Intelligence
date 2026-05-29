@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BarChart, Bar, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { BarChart, Bar, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Activity, AlertTriangle, Boxes, PackageCheck, RefreshCcw, ShoppingCart, Truck } from 'lucide-react';
 import { dashboardService } from '../api/dashboardService';
 import Badge from '../components/ui/Badge';
@@ -13,6 +13,14 @@ import Table from '../components/ui/Table';
 import { formatCurrency, formatDateTime, formatNumber } from '../utils/formatters';
 
 const chartColors = ['#0f766e', '#2563eb', '#65a30d', '#f59e0b', '#dc2626', '#7c3aed'];
+
+function formatStatus(value) {
+  return String(value || '').replaceAll('_', ' ');
+}
+
+function movementTone(value) {
+  return value?.includes('ENTRADA') || value?.includes('POSITIVO') ? 'success' : 'warning';
+}
 
 export default function Dashboard() {
   const [resumen, setResumen] = useState(null);
@@ -50,7 +58,7 @@ export default function Dashboard() {
 
   const ordenesPorEstado = useMemo(() => {
     const source = resumen?.ordenesPorEstado || {};
-    return Object.entries(source).map(([estado, total]) => ({ estado, total }));
+    return Object.entries(source).map(([estado, total]) => ({ estado, estadoLabel: formatStatus(estado), total }));
   }, [resumen]);
 
   const metricasPorTipo = useMemo(() => {
@@ -59,8 +67,13 @@ export default function Dashboard() {
       acc[key] = (acc[key] || 0) + Number(item.valor || 0);
       return acc;
     }, {});
-    return Object.entries(grouped).map(([tipo, valor]) => ({ tipo, valor }));
+    return Object.entries(grouped).map(([tipo, valor]) => ({ tipo, tipoLabel: formatStatus(tipo), valor }));
   }, [metricas]);
+
+  const totalOrdenes = useMemo(
+    () => ordenesPorEstado.reduce((sum, item) => sum + Number(item.total || 0), 0),
+    [ordenesPorEstado]
+  );
 
   async function handleRecalcular() {
     setNotice('');
@@ -97,45 +110,79 @@ export default function Dashboard() {
       ) : (
         <>
           <div className="stat-grid">
-            <StatCard label="Medicamentos activos" value={formatNumber(resumen.totalMedicamentosActivos ?? 0)} icon={<PackageCheck size={22} />} />
-            <StatCard label="Proveedores activos" value={formatNumber(resumen.totalProveedoresActivos ?? 0)} icon={<Truck size={22} />} />
-            <StatCard label="Inventarios" value={formatNumber(resumen.totalInventarios ?? 0)} icon={<Boxes size={22} />} />
-            <StatCard label="Ordenes pendientes" value={formatNumber(resumen.totalOrdenesPendientes ?? 0)} helper={formatCurrency(resumen.valorTotalOrdenesPendientes)} icon={<ShoppingCart size={22} />} />
-            <StatCard label="Stock critico" value={formatNumber(resumen.totalStockCritico ?? 0)} icon={<AlertTriangle size={22} />} />
-            <StatCard label="Alertas pendientes" value={formatNumber(resumen.totalAlertasPendientes ?? 0)} icon={<Activity size={22} />} />
+            <StatCard label="Medicamentos activos" value={formatNumber(resumen.totalMedicamentosActivos ?? 0)} helper="Total activo del catalogo" meta="Actualizado" icon={<PackageCheck size={22} />} />
+            <StatCard label="Proveedores activos" value={formatNumber(resumen.totalProveedoresActivos ?? 0)} helper="Aliados disponibles" meta="Total activo" tone="info" icon={<Truck size={22} />} />
+            <StatCard label="Inventarios" value={formatNumber(resumen.totalInventarios ?? 0)} helper="Centros con stock registrado" meta="Operacion" tone="info" icon={<Boxes size={22} />} />
+            <StatCard label="Ordenes pendientes" value={formatNumber(resumen.totalOrdenesPendientes ?? 0)} helper={formatCurrency(resumen.valorTotalOrdenesPendientes)} meta="Por gestionar" tone="warning" icon={<ShoppingCart size={22} />} />
+            <StatCard label="Stock critico" value={formatNumber(resumen.totalStockCritico ?? 0)} helper="Inventarios bajo umbral" meta="Riesgo" tone="danger" icon={<AlertTriangle size={22} />} />
+            <StatCard label="Alertas pendientes" value={formatNumber(resumen.totalAlertasPendientes ?? 0)} helper="Eventos abiertos" meta="Revision" tone="warning" icon={<Activity size={22} />} />
           </div>
 
-          <div className="dashboard-grid">
+          <div className="dashboard-grid-wide">
             <Card>
-              <CardHeader title="Ordenes por estado" subtitle="Distribucion de compras" />
+              <CardHeader
+                title="Ordenes por estado"
+                subtitle="Distribucion de compras segun registros reales del backend."
+                meta={`${formatNumber(totalOrdenes)} ordenes`}
+              />
               {ordenesPorEstado.length ? (
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={ordenesPorEstado}>
+                <>
+                  <div className="chart-shell">
+                    <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={ordenesPorEstado} margin={{ top: 10, right: 14, left: 0, bottom: 18 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="estado" />
+                    <XAxis dataKey="estadoLabel" tick={{ fontSize: 12 }} />
                     <YAxis allowDecimals={false} />
-                    <Tooltip />
+                    <Tooltip formatter={(value) => [formatNumber(value), 'Ordenes']} labelFormatter={(label) => `Estado: ${label}`} />
                     <Bar dataKey="total" radius={[6, 6, 0, 0]} fill="#0f766e" />
                   </BarChart>
-                </ResponsiveContainer>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="chart-summary">
+                    {ordenesPorEstado.map((item) => (
+                      <Badge key={item.estado} tone={item.estado === 'RECIBIDA' ? 'success' : item.estado === 'CANCELADA' ? 'danger' : 'info'}>
+                        {item.estadoLabel}: {formatNumber(item.total)}
+                      </Badge>
+                    ))}
+                  </div>
+                </>
               ) : (
                 <EmptyState title="Sin ordenes" message="No hay distribucion por estado disponible." />
               )}
             </Card>
 
             <Card>
-              <CardHeader title="Metricas por tipo" subtitle="Historico calculado" />
+              <CardHeader
+                title="Metricas por tipo"
+                subtitle="Resumen historico calculado por tipo de metrica."
+                meta={`${formatNumber(metricasPorTipo.length)} tipos`}
+              />
               {metricasPorTipo.length ? (
-                <ResponsiveContainer width="100%" height={280}>
-                  <PieChart>
-                    <Pie data={metricasPorTipo} dataKey="valor" nameKey="tipo" outerRadius={95} label>
-                      {metricasPorTipo.map((entry, index) => (
-                        <Cell key={entry.tipo} fill={chartColors[index % chartColors.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                <>
+                  <div className="chart-shell">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={metricasPorTipo} layout="vertical" margin={{ top: 10, right: 14, left: 18, bottom: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                        <XAxis type="number" allowDecimals={false} />
+                        <YAxis type="category" dataKey="tipoLabel" width={128} tick={{ fontSize: 12 }} />
+                        <Tooltip formatter={(value) => [formatNumber(value), 'Valor']} />
+                        <Bar dataKey="valor" radius={[0, 6, 6, 0]}>
+                          {metricasPorTipo.map((entry, index) => (
+                            <Cell key={entry.tipo} fill={chartColors[index % chartColors.length]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="chart-legend">
+                    {metricasPorTipo.map((item, index) => (
+                      <span className="legend-item" key={item.tipo}>
+                        <span className="legend-swatch" style={{ background: chartColors[index % chartColors.length] }} />
+                        {item.tipoLabel}
+                      </span>
+                    ))}
+                  </div>
+                </>
               ) : (
                 <EmptyState title="Sin metricas" message="Ejecuta recalcular cuando el backend tenga datos de inventario." />
               )}
@@ -143,15 +190,20 @@ export default function Dashboard() {
           </div>
 
           <Card>
-            <CardHeader title="Movimientos recientes" subtitle="Ultimas operaciones registradas" />
+            <CardHeader
+              title="Movimientos recientes"
+              subtitle="Ultimas operaciones registradas en inventario."
+              meta={`${formatNumber((resumen.movimientosRecientes || []).length)} movimientos`}
+            />
             <Table
               rows={resumen.movimientosRecientes || []}
+              compact
               columns={[
                 { key: 'fechaMovimiento', header: 'Fecha', render: (row) => formatDateTime(row.fechaMovimiento) },
-                { key: 'tipoMovimiento', header: 'Tipo', render: (row) => <Badge tone={row.tipoMovimiento?.includes('ENTRADA') ? 'success' : 'warning'}>{row.tipoMovimiento}</Badge> },
+                { key: 'tipoMovimiento', header: 'Tipo', render: (row) => <Badge className="movement-type" tone={movementTone(row.tipoMovimiento)}>{formatStatus(row.tipoMovimiento)}</Badge> },
                 { key: 'medicamentoNombre', header: 'Medicamento' },
                 { key: 'centroDistribucionNombre', header: 'Centro' },
-                { key: 'cantidad', header: 'Cantidad' },
+                { key: 'cantidad', header: 'Cantidad', align: 'right', render: (row) => formatNumber(row.cantidad) },
               ]}
               emptyMessage="No hay movimientos recientes disponibles."
             />

@@ -9,6 +9,7 @@ import Input from '../components/ui/Input';
 import Loading from '../components/ui/Loading';
 import Modal from '../components/ui/Modal';
 import Table from '../components/ui/Table';
+import { formatNumber } from '../utils/formatters';
 
 const emptyForm = { nit: '', nombre: '', telefono: '', correo: '', direccion: '', activo: true };
 
@@ -44,6 +45,7 @@ export default function Proveedores() {
     const value = query.toLowerCase();
     return rows.filter((item) => [item.nit, item.nombre, item.correo].join(' ').toLowerCase().includes(value));
   }, [query, rows]);
+  const activeCount = useMemo(() => rows.filter((item) => item.activo).length, [rows]);
 
   function setField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -111,19 +113,29 @@ export default function Proveedores() {
       <Card>
         <CardHeader
           title="Directorio de proveedores"
-          action={<div className="toolbar-inline"><Input placeholder="Buscar proveedor..." value={query} onChange={(event) => setQuery(event.target.value)} /><label className="check-field compact"><input type="checkbox" checked={onlyActive} onChange={(event) => setOnlyActive(event.target.checked)} />Solo activos</label></div>}
+          subtitle="Aliados de abastecimiento con datos comerciales y estado operativo."
+          meta={`${formatNumber(filteredRows.length)} de ${formatNumber(rows.length)} registros`}
         />
+        <div className="toolbar-panel">
+          <Input placeholder="Buscar por NIT, nombre o correo..." value={query} onChange={(event) => setQuery(event.target.value)} />
+          <div className="toolbar-actions">
+            <span className="record-counter">{formatNumber(activeCount)} activos</span>
+            <label className="check-field compact"><input type="checkbox" checked={onlyActive} onChange={(event) => setOnlyActive(event.target.checked)} />Solo activos</label>
+          </div>
+        </div>
         <Table
           rows={filteredRows}
+          compact
           columns={[
-            { key: 'nit', header: 'NIT' },
+            { key: 'nit', header: 'NIT', render: (row) => <span className="code-chip">{row.nit}</span> },
             { key: 'nombre', header: 'Nombre' },
             { key: 'telefono', header: 'Telefono' },
             { key: 'correo', header: 'Correo' },
             { key: 'activo', header: 'Estado', render: (row) => <Badge tone={row.activo ? 'success' : 'neutral'}>{row.activo ? 'Activo' : 'Inactivo'}</Badge> },
             { key: 'actions', header: 'Acciones', render: (row) => <div className="row-actions"><Button variant="ghost" size="sm" onClick={() => openEdit(row)}><Edit size={15} />Editar</Button><Button variant="danger" size="sm" onClick={() => deactivate(row)}><Power size={15} />Desactivar</Button></div> },
           ]}
-          emptyMessage="No hay proveedores registrados."
+          emptyTitle="Sin proveedores"
+          emptyMessage="No hay proveedores que coincidan con el filtro actual."
         />
       </Card>
       <Modal open={modalOpen} title={editing ? 'Editar proveedor' : 'Nuevo proveedor'} onClose={() => setModalOpen(false)} footer={<><Button variant="secondary" onClick={() => setModalOpen(false)}>Cancelar</Button><Button type="submit" form="proveedor-form" disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</Button></>}>

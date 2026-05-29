@@ -10,7 +10,7 @@ import ErrorMessage from '../components/ui/ErrorMessage';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import Table from '../components/ui/Table';
-import { formatDateTime } from '../utils/formatters';
+import { formatDateTime, formatNumber } from '../utils/formatters';
 import { INVENTORY_WRITE_ROLES } from '../utils/roles';
 
 const emptyMovement = {
@@ -22,6 +22,14 @@ const emptyMovement = {
   observacion: '',
   usuarioResponsable: '',
 };
+
+function formatMovement(value) {
+  return String(value || '').replaceAll('_', ' ');
+}
+
+function movementTone(value) {
+  return value?.includes('ENTRADA') || value?.includes('POSITIVO') ? 'success' : 'warning';
+}
 
 export default function Inventario() {
   const { hasAnyRole, user } = useAuth();
@@ -84,7 +92,11 @@ export default function Inventario() {
 
       <div className="two-column-grid">
         <Card>
-          <CardHeader title="Registrar movimiento" subtitle={canRegister ? 'Usa IDs reales de inventario y lote.' : 'No tienes permisos para registrar movimientos.'} />
+          <CardHeader
+            title="Registrar movimiento"
+            subtitle={canRegister ? 'Entrada, salida o ajuste contra inventario y lote reales.' : 'No tienes permisos para registrar movimientos.'}
+            meta={canRegister ? 'Operacion controlada' : 'Solo consulta'}
+          />
           {canRegister ? (
             <form className="grid-form single" onSubmit={registrar}>
               <Select label="Tipo" value={movement.tipoMovimiento} onChange={(event) => setField('tipoMovimiento', event.target.value)}>
@@ -107,7 +119,7 @@ export default function Inventario() {
         </Card>
 
         <Card>
-          <CardHeader title="Consulta de kardex" subtitle="Endpoint real: /movimientos-inventario/kardex/inventario/{id}" />
+          <CardHeader title="Consulta de kardex" subtitle="Historial de movimientos para un inventario especifico." meta="Datos reales" />
           <form className="inline-form" onSubmit={buscarKardex}>
             <Input placeholder="Inventario ID" type="number" value={kardexId} onChange={(event) => setKardexId(event.target.value)} required />
             <Button type="submit" disabled={loading}><Search size={16} />Consultar</Button>
@@ -117,17 +129,23 @@ export default function Inventario() {
       </div>
 
       <Card>
-        <CardHeader title="Kardex consultado" subtitle="Movimientos ordenados por fecha segun respuesta del backend." />
+        <CardHeader
+          title="Kardex consultado"
+          subtitle="Movimientos ordenados por fecha segun respuesta del backend."
+          meta={`${formatNumber((kardex || []).length)} movimientos`}
+        />
         <Table
           rows={kardex || []}
+          compact
           columns={[
             { key: 'fechaMovimiento', header: 'Fecha', render: (row) => formatDateTime(row.fechaMovimiento) },
-            { key: 'tipoMovimiento', header: 'Tipo', render: (row) => <Badge tone={row.tipoMovimiento?.includes('ENTRADA') || row.tipoMovimiento?.includes('POSITIVO') ? 'success' : 'warning'}>{row.tipoMovimiento}</Badge> },
+            { key: 'tipoMovimiento', header: 'Tipo', render: (row) => <Badge className="movement-type" tone={movementTone(row.tipoMovimiento)}>{formatMovement(row.tipoMovimiento)}</Badge> },
             { key: 'medicamentoNombre', header: 'Medicamento' },
-            { key: 'numeroLote', header: 'Lote' },
-            { key: 'cantidad', header: 'Cantidad' },
-            { key: 'stockDespues', header: 'Stock despues' },
+            { key: 'numeroLote', header: 'Lote', render: (row) => <span className="code-chip">{row.numeroLote}</span> },
+            { key: 'cantidad', header: 'Cantidad', align: 'right', render: (row) => formatNumber(row.cantidad) },
+            { key: 'stockDespues', header: 'Stock despues', align: 'right', render: (row) => formatNumber(row.stockDespues) },
           ]}
+          emptyTitle="Sin kardex cargado"
           emptyMessage="Consulta un inventario para visualizar su kardex."
         />
       </Card>

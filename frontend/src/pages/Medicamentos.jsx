@@ -12,6 +12,7 @@ import Loading from '../components/ui/Loading';
 import Modal from '../components/ui/Modal';
 import Select from '../components/ui/Select';
 import Table from '../components/ui/Table';
+import { formatNumber } from '../utils/formatters';
 import { ROLES } from '../utils/roles';
 
 const emptyForm = {
@@ -68,6 +69,8 @@ export default function Medicamentos() {
     const value = query.toLowerCase();
     return rows.filter((item) => [item.codigo, item.nombre, item.principioActivo, item.categoriaMedicamentoNombre].join(' ').toLowerCase().includes(value));
   }, [query, rows]);
+
+  const activeCount = useMemo(() => rows.filter((item) => item.activo).length, [rows]);
 
   function setField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -151,11 +154,22 @@ export default function Medicamentos() {
       <ErrorMessage message={error} />
       {notice && <div className="success-message">{notice}</div>}
       <Card>
-        <CardHeader title="Catalogo" action={<Input placeholder="Buscar medicamento..." value={query} onChange={(event) => setQuery(event.target.value)} />} />
+        <CardHeader
+          title="Catalogo de medicamentos"
+          subtitle="Referencias disponibles para compras, inventario y documentos."
+          meta={`${formatNumber(filteredRows.length)} de ${formatNumber(rows.length)} registros`}
+        />
+        <div className="toolbar-panel">
+          <Input placeholder="Buscar por codigo, nombre, principio o categoria..." value={query} onChange={(event) => setQuery(event.target.value)} />
+          <div className="toolbar-actions">
+            <span className="record-counter">{formatNumber(activeCount)} activos</span>
+          </div>
+        </div>
         <Table
           rows={filteredRows}
+          compact
           columns={[
-            { key: 'codigo', header: 'Codigo' },
+            { key: 'codigo', header: 'Codigo', render: (row) => <span className="code-chip">{row.codigo}</span> },
             { key: 'nombre', header: 'Nombre' },
             { key: 'principioActivo', header: 'Principio activo' },
             { key: 'presentacion', header: 'Presentacion' },
@@ -164,10 +178,11 @@ export default function Medicamentos() {
             {
               key: 'actions',
               header: 'Acciones',
-              render: (row) => canManage ? <div className="row-actions"><Button variant="ghost" size="sm" onClick={() => openEdit(row)}><Edit size={15} />Editar</Button><Button variant="danger" size="sm" onClick={() => remove(row)}><Trash2 size={15} />Desactivar</Button></div> : 'Solo lectura',
+              render: (row) => canManage ? <div className="row-actions"><Button variant="ghost" size="sm" onClick={() => openEdit(row)}><Edit size={15} />Editar</Button><Button variant="danger" size="sm" onClick={() => remove(row)}><Trash2 size={15} />Desactivar</Button></div> : <Badge tone="neutral">Solo lectura</Badge>,
             },
           ]}
-          emptyMessage="No hay medicamentos registrados."
+          emptyTitle="Sin medicamentos"
+          emptyMessage="No hay medicamentos que coincidan con el filtro actual."
         />
       </Card>
 

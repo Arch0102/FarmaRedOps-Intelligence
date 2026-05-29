@@ -5,9 +5,10 @@ import { useAuth } from '../auth/AuthContext';
 import Button from '../components/ui/Button';
 import ErrorMessage from '../components/ui/ErrorMessage';
 import Input from '../components/ui/Input';
+import { getDefaultRouteForRoles } from '../utils/roles';
 
 export default function Register() {
-  const { register, isAuthenticated } = useAuth();
+  const { register, isAuthenticated, roles } = useAuth();
   const [form, setForm] = useState({
     username: '',
     email: '',
@@ -19,7 +20,7 @@ export default function Register() {
   const navigate = useNavigate();
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={getDefaultRouteForRoles(roles)} replace />;
   }
 
   function updateField(field, value) {
@@ -32,8 +33,8 @@ export default function Register() {
     setLoading(true);
 
     try {
-      await register(form);
-      navigate('/dashboard', { replace: true });
+      const result = await register(form);
+      navigate(getDefaultRouteForRoles(result.user?.roles), { replace: true });
     } catch (exception) {
       setError(exception.userMessage || exception.message || 'No fue posible registrar el usuario.');
     } finally {

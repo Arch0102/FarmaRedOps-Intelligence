@@ -1,23 +1,30 @@
-import { useEffect, useState } from 'react';
-import { Download, FilePlus2, FileText, RefreshCcw, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { CheckCircle2, Database, Download, FileCheck2, FilePlus2, FileText, Gauge, RefreshCcw, Trash2 } from 'lucide-react';
 import { documentoService } from '../api/documentoService';
 import Button from '../components/ui/Button';
 import Card, { CardHeader } from '../components/ui/Card';
-import EmptyState from '../components/ui/EmptyState';
 import ErrorMessage from '../components/ui/ErrorMessage';
 import Input from '../components/ui/Input';
 import Loading from '../components/ui/Loading';
 import Select from '../components/ui/Select';
 import Table from '../components/ui/Table';
 import Badge from '../components/ui/Badge';
-import { formatDateTime } from '../utils/formatters';
+import { formatDateTime, formatNumber } from '../utils/formatters';
 import { useAuth } from '../auth/AuthContext';
 
 const tiposDocumento = ['PDF', 'FACTURA', 'ORDEN_COMPRA', 'SOPORTE_INVENTARIO', 'REPORTE', 'OTRO'];
 
+function formatBytes(value) {
+  const bytes = Number(value || 0);
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 export default function Documentos() {
   const { user } = useAuth();
   const [rows, setRows] = useState([]);
+  const [query, setQuery] = useState('');
   const [file, setFile] = useState(null);
   const [metadata, setMetadata] = useState({
     tipoDocumento: 'PDF',
@@ -46,6 +53,11 @@ export default function Documentos() {
   useEffect(() => {
     load();
   }, []);
+
+  const filteredRows = useMemo(() => {
+    const value = query.toLowerCase();
+    return rows.filter((item) => [item.nombreOriginal, item.tipoDocumento, item.usuarioCarga, item.moduloReferencia].join(' ').toLowerCase().includes(value));
+  }, [query, rows]);
 
   function setField(field, value) {
     setMetadata((current) => ({ ...current, [field]: value }));
@@ -134,9 +146,9 @@ export default function Documentos() {
       <ErrorMessage message={error} />
       {notice && <div className="success-message">{notice}</div>}
 
-      <div className="two-column-grid">
+      <div className="two-column-grid document-grid">
         <Card>
-          <CardHeader title="Subir documento" subtitle="Solo archivos PDF segun validacion del backend." />
+          <CardHeader title="Subir documento" subtitle="Archivo PDF con metadatos operativos para trazabilidad." meta="Validacion backend" />
           <form className="grid-form single" onSubmit={upload}>
             <label className="file-drop">
               <FilePlus2 size={28} />
@@ -156,27 +168,66 @@ export default function Documentos() {
         </Card>
 
         <Card>
-          <CardHeader title="Estado del modulo" />
-          <EmptyState
-            title="Descarga binaria preservada"
-            message="La descarga usa responseType blob porque el backend no envuelve archivos en ApiResponse."
-          />
+          <CardHeader title="Estado del modulo" subtitle="Capacidades activas de documentos y reportes." />
+          <div className="info-list">
+            <div className="info-row">
+              <Database size={18} />
+              <div>
+                <strong>Descarga binaria preservada</strong>
+                <span>La descarga usa `responseType: blob` para conservar el PDF sin envoltorios JSON.</span>
+              </div>
+            </div>
+            <div className="info-row">
+              <FileCheck2 size={18} />
+              <div>
+                <strong>Formato permitido</strong>
+                <span>El backend valida `application/pdf` y extension `.pdf`.</span>
+              </div>
+            </div>
+            <div className="info-row">
+              <Gauge size={18} />
+              <div>
+                <strong>Tamano maximo</strong>
+                <span>Configurado en backend para 10 MB por documento.</span>
+              </div>
+            </div>
+            <div className="info-row">
+              <CheckCircle2 size={18} />
+              <div>
+                <strong>Generador de reporte dashboard</strong>
+                <span>La UI intenta generar el reporte; si el endpoint no existe, muestra el estado pendiente sin romper la pantalla.</span>
+              </div>
+            </div>
+          </div>
         </Card>
       </div>
 
       <Card>
-        <CardHeader title="Documentos activos" />
+        <CardHeader
+          title="Documentos activos"
+          subtitle="Archivos disponibles para consulta y descarga."
+          meta={`${formatNumber(filteredRows.length)} de ${formatNumber(rows.length)} documentos`}
+        />
+        <div className="toolbar-panel">
+          <Input placeholder="Buscar por archivo, tipo, usuario o modulo..." value={query} onChange={(event) => setQuery(event.target.value)} />
+          <div className="toolbar-actions">
+            <span className="record-counter">{formatNumber(rows.length)} activos</span>
+          </div>
+        </div>
         <Table
-          rows={rows}
+          rows={filteredRows}
+          compact
           columns={[
             { key: 'nombreOriginal', header: 'Archivo', render: (row) => <span className="file-name"><FileText size={16} />{row.nombreOriginal}</span> },
             { key: 'tipoDocumento', header: 'Tipo', render: (row) => <Badge tone="info">{row.tipoDocumento}</Badge> },
             { key: 'estadoDocumento', header: 'Estado', render: (row) => <Badge tone={row.activo ? 'success' : 'neutral'}>{row.estadoDocumento}</Badge> },
+            { key: 'tamanoBytes', header: 'Tamano', align: 'right', render: (row) => formatBytes(row.tamanoBytes) },
             { key: 'usuarioCarga', header: 'Usuario' },
             { key: 'fechaCarga', header: 'Fecha', render: (row) => formatDateTime(row.fechaCarga) },
             { key: 'actions', header: 'Acciones', render: (row) => <div className="row-actions"><Button variant="ghost" size="sm" onClick={() => download(row)}><Download size={15} />Descargar</Button><Button variant="danger" size="sm" onClick={() => remove(row)}><Trash2 size={15} />Eliminar</Button></div> },
           ]}
-          emptyMessage="No hay documentos activos."
+          emptyTitle="Sin documentos"
+          emptyMessage="No hay documentos activos que coincidan con el filtro actual."
         />
       </Card>
     </div>

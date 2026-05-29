@@ -5,9 +5,10 @@ import { useAuth } from '../auth/AuthContext';
 import Button from '../components/ui/Button';
 import ErrorMessage from '../components/ui/ErrorMessage';
 import Input from '../components/ui/Input';
+import { getDefaultRouteForRoles } from '../utils/roles';
 
 export default function Login() {
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, roles } = useAuth();
   const [form, setForm] = useState({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -15,10 +16,10 @@ export default function Login() {
   const location = useLocation();
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={getDefaultRouteForRoles(roles)} replace />;
   }
 
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = location.state?.from?.pathname;
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -26,8 +27,8 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await login(form);
-      navigate(from, { replace: true });
+      const result = await login(form);
+      navigate(from || getDefaultRouteForRoles(result.user?.roles), { replace: true });
     } catch (exception) {
       setError(exception.userMessage || exception.message || 'No fue posible iniciar sesion.');
     } finally {
