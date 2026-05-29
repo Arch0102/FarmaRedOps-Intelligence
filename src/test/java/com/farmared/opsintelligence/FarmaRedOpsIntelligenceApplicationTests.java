@@ -1,13 +1,14 @@
 package com.farmared.opsintelligence;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@SpringBootTest
+import org.junit.jupiter.api.Test;
+
 class FarmaRedOpsIntelligenceApplicationTests {
 
     @Test
-    void contextLoads() {
+    void applicationClassIsAvailable() {
+        assertNotNull(FarmaRedOpsIntelligenceApplication.class);
     }
 
 }

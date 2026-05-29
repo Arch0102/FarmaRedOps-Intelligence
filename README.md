@@ -1,691 +1,328 @@
-# FarmaRed Ops-Intelligence
+# FarmaRedOps Intelligence
 
-FarmaRed Ops-Intelligence es un sistema backend desarrollado con Spring Boot para apoyar la gestión operativa de una red farmacéutica. El objetivo del proyecto es centralizar procesos relacionados con medicamentos, centros de distribución, inventario, movimientos de stock, usuarios, autenticación, proveedores, órdenes de compra y futuras métricas de analítica.
+![Java](https://img.shields.io/badge/Java-21-orange)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-brightgreen)
+![React](https://img.shields.io/badge/React-18-blue)
+![Vite](https://img.shields.io/badge/Vite-6-purple)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-blue)
+![Docker](https://img.shields.io/badge/Docker-ready-blue)
+![Build](https://img.shields.io/badge/build-passing-brightgreen)
+![License](https://img.shields.io/badge/license-Academic%20Project-lightgrey)
 
-El sistema está construido como una API REST, usando arquitectura por capas, seguridad con JWT, persistencia en PostgreSQL, DTOs, MapStruct, manejo global de errores y trabajo colaborativo mediante Git/GitHub.
+FarmaRedOps Intelligence es una plataforma full stack para apoyar la operacion de una red farmaceutica. Integra backend Spring Boot, frontend React/Vite, PostgreSQL, autenticacion JWT, inventario, Kardex, alertas, dashboard analitico, documentos, Docker Compose y datos demo automaticos.
 
----
+## Tabla De Contenido
 
-## Estado actual del proyecto
+- [Capturas](#capturas)
+- [Descripcion Del Proyecto](#descripcion-del-proyecto)
+- [Caracteristicas Principales](#caracteristicas-principales)
+- [Roles](#roles)
+- [Arquitectura](#arquitectura)
+- [Tecnologias](#tecnologias)
+- [Ejecucion Con Docker](#ejecucion-con-docker)
+- [Comandos Utiles](#comandos-utiles)
+- [Ejecucion Local Sin Docker](#ejecucion-local-sin-docker)
+- [Endpoints Principales](#endpoints-principales)
+- [Pruebas](#pruebas)
+- [Evidencia De Calidad](#evidencia-de-calidad)
+- [Equipo](#equipo)
 
-Actualmente el backend cuenta con:
+## Capturas
 
-- API REST funcional.
-- Conexión a PostgreSQL.
-- Seguridad con Spring Security y JWT.
-- Registro y login de usuarios.
-- Endpoints protegidos mediante Bearer Token.
-- Manejo global de errores con `GlobalExceptionHandler`.
-- CRUD funcional de tres entidades:
-  - Categorías de medicamento.
-  - Centros de distribución.
-  - Medicamentos.
-- Módulo de inventario:
-  - Entrada de inventario.
-  - Salida de inventario.
-  - Consulta de Kardex.
-  - Alertas de stock crítico.
-- Modelo base para:
-  - Proveedores.
-  - Medicamentos por proveedor.
-  - Órdenes de compra.
-  - Detalles de orden.
-  - Métricas de dashboard.
-- Mapeo DTO/Entity con MapStruct.
-- Documentación de pruebas en la carpeta `docs`.
+Agregar las capturas de la aplicacion en estas rutas:
 
----
+| Vista | Ruta |
+| --- | --- |
+| Login | `docs/screenshots/login.png` |
+| Dashboard | `docs/screenshots/dashboard.png` |
+| Inventario | `docs/screenshots/inventario.png` |
+| Kardex | `docs/screenshots/kardex.png` |
+| Centros | `docs/screenshots/centros.png` |
 
-## Tecnologías utilizadas
+Flujo sugerido: iniciar el stack con Docker, entrar con `admin / admin123`, abrir cada modulo, guardar las imagenes PNG en `docs/screenshots/` y subirlas junto con este README.
 
-- Java 21
-- Spring Boot 3.5.13
-- Spring Web
-- Spring Data JPA
-- Hibernate
-- Spring Security
-- JWT con JJWT
-- PostgreSQL
-- Maven
-- Lombok
-- MapStruct
-- Jakarta Validation
-- Postman
-- Git y GitHub
+## Descripcion Del Proyecto
 
----
+FarmaRedOps Intelligence centraliza procesos operativos de una red farmaceutica: autenticacion, usuarios por rol, medicamentos, categorias, centros de distribucion, inventario, movimientos de stock, Kardex, ordenes de compra, proveedores, alertas de stock, dashboard analitico y documentos.
 
-## Arquitectura del proyecto
+El proyecto esta preparado para ejecutarse desde un clone limpio:
 
-El proyecto sigue una arquitectura por capas para separar responsabilidades y facilitar mantenimiento.
+- PostgreSQL corre en Docker.
+- El backend Spring Boot corre en Docker y queda publicado en `8081`.
+- El frontend React/Vite se compila y se sirve con Nginx en `5173`.
+- La base demo se carga automaticamente con `DemoDataInitializer` usando el perfil `docker`.
 
-Estructura lógica:
+## Caracteristicas Principales
 
-```text
-Controller
-Service
-ServiceImpl
-Repository
-Entity
-DTO Request / DTO Response
-Mapper
-Exception Handler
-Security
-```
+- Autenticacion JWT.
+- Seguridad por roles.
+- CRUD de medicamentos, categorias y centros de distribucion.
+- Inventario, movimientos y Kardex.
+- Dashboard analitico con metricas operativas.
+- Alertas de stock critico y punto de reorden.
+- Gestion de proveedores y ordenes de compra.
+- Carga, descarga y generacion de documentos PDF.
+- Docker full stack con PostgreSQL, backend y frontend.
+- Datos demo automaticos.
+- Pruebas unitarias relevantes para servicios de negocio.
 
-Explicación de capas:
+## Roles
 
-- `Controller`: recibe peticiones HTTP y retorna respuestas REST.
-- `Service`: define operaciones de negocio.
-- `ServiceImpl`: implementa la lógica de negocio.
-- `Repository`: acceso a datos con Spring Data JPA.
-- `Entity`: representación de tablas de base de datos.
-- `DTO Request`: datos recibidos desde el cliente.
-- `DTO Response`: datos enviados como respuesta.
-- `Mapper`: conversión entre entidades y DTOs.
-- `Exception Handler`: manejo centralizado de errores.
-- `Security`: configuración JWT y seguridad de endpoints.
+| Rol | Descripcion |
+| --- | --- |
+| `ROLE_ADMIN_AUDITOR` | Administra catalogos, usuarios, dashboard, auditoria y supervision operativa. |
+| `ROLE_AUXILIAR_BODEGA` | Opera medicamentos, inventario, movimientos y Kardex. |
+| `ROLE_ANALISTA_COMPRAS` | Gestiona proveedores, ordenes de compra, abastecimiento y analitica. |
 
-Estructura principal:
+Usuarios demo:
+
+| Usuario | Password | Rol |
+| --- | --- | --- |
+| `admin` | `admin123` | `ROLE_ADMIN_AUDITOR` |
+| `auxiliar` | `auxiliar123` | `ROLE_AUXILIAR_BODEGA` |
+| `compras` | `compras123` | `ROLE_ANALISTA_COMPRAS` |
+
+## Arquitectura
+
+El backend usa arquitectura por capas:
 
 ```text
 src/main/java/com/farmared/opsintelligence
-├── config
-├── controller
-├── dto
-│   ├── request
-│   └── response
-├── entity
-│   └── enums
-├── exception
-├── mapper
-├── repository
-├── security
-├── service
-│   └── impl
-└── FarmaRedOpsIntelligenceApplication.java
+|-- config
+|-- controller
+|-- dto
+|   |-- request
+|   `-- response
+|-- entity
+|   `-- enums
+|-- exception
+|-- mapper
+|-- repository
+|-- security
+|-- service
+|   `-- impl
+`-- FarmaRedOpsIntelligenceApplication.java
 ```
 
----
-
-## Configuración del proyecto
-
-El proyecto usa variables de entorno para evitar subir contraseñas o secretos reales al repositorio.
-
-Configuración principal esperada en `application.properties`:
-
-```properties
-spring.application.name=FarmaRedOpsIntelligence
-
-spring.datasource.url=${DB_URL:jdbc:postgresql://localhost:5432/farmared_db}
-spring.datasource.username=${DB_USER:postgres}
-spring.datasource.password=${DB_PASSWORD:postgres}
-spring.datasource.driver-class-name=org.postgresql.Driver
-
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
-spring.jpa.open-in-view=false
-
-server.port=${SERVER_PORT:8080}
-
-jwt.secret=${JWT_SECRET:clave_jwt_de_desarrollo_con_minimo_32_caracteres}
-jwt.expiration-ms=${JWT_EXPIRATION_MS:3600000}
-```
-
-Variables necesarias para ejecutar localmente:
-
-```text
-DB_URL=jdbc:postgresql://localhost:5432/farmared_db
-DB_USER=postgres
-DB_PASSWORD=TU_CONTRASEÑA_REAL
-SERVER_PORT=8080
-JWT_SECRET=clave_jwt_de_desarrollo_con_minimo_32_caracteres
-JWT_EXPIRATION_MS=3600000
-```
-
-Ejemplo para IntelliJ en `Environment variables`:
-
-```text
-DB_URL=jdbc:postgresql://localhost:5432/farmared_db;DB_USER=postgres;DB_PASSWORD=TU_CONTRASEÑA_REAL;SERVER_PORT=8080;JWT_SECRET=clave_jwt_de_desarrollo_con_minimo_32_caracteres;JWT_EXPIRATION_MS=3600000
-```
-
----
-
-## Base de datos
-
-El proyecto utiliza PostgreSQL.
-
-Base de datos esperada:
-
-```text
-farmared_db
-```
-
-Si la base de datos no existe, puede crearse con:
-
-```sql
-CREATE DATABASE farmared_db;
-```
-
-Hibernate está configurado con:
-
-```properties
-spring.jpa.hibernate.ddl-auto=update
-```
-
-Esto permite crear o actualizar tablas automáticamente durante el desarrollo.
-
-Tablas principales actuales:
-
-```text
-usuarios
-roles
-usuarios_roles
-categorias_medicamento
-centros_distribucion
-medicamentos
-inventarios
-lotes_medicamento
-movimientos_inventario
-alertas_stock
-proveedores
-medicamentos_proveedor
-ordenes_compra
-detalles_orden
-dashboard_metricas
-```
-
----
-
-## Seguridad JWT
-
-La aplicación usa Spring Security con JWT.
-
-Flujo de autenticación:
-
-1. El usuario se registra o inicia sesión.
-2. El backend genera un token JWT.
-3. El cliente usa el token para consumir endpoints protegidos.
-4. El token se envía en el header `Authorization`.
-
-Formato:
-
-```text
-Authorization: Bearer TOKEN_JWT
-```
-
-Endpoints públicos:
-
-```http
-POST /api/v1/auth/register
-POST /api/v1/auth/login
-```
-
-Todos los demás endpoints requieren Bearer Token.
-
----
-
-## Autenticación
-
-### Registro
-
-```http
-POST /api/v1/auth/register
-```
-
-Body de ejemplo:
-
-```json
-{
-  "username": "santiago",
-  "email": "santiago@farmared.com",
-  "password": "123456",
-  "nombreCompleto": "Santiago Ortiz"
-}
-```
-
-Resultado esperado:
-
-```text
-201 Created
-```
-
----
-
-### Login
-
-```http
-POST /api/v1/auth/login
-```
-
-Body de ejemplo:
-
-```json
-{
-  "username": "santiago",
-  "password": "123456"
-}
-```
-
-Resultado esperado:
-
-```text
-200 OK
-```
-
-La respuesta retorna un token JWT que debe usarse para consumir los endpoints protegidos.
-
----
-
-## CRUD base implementado
-
-Para la segunda entrega se implementó CRUD funcional mínimo de tres entidades principales:
-
-- `CategoriaMedicamento`
-- `CentroDistribucion`
-- `Medicamento`
-
-Cada entidad cuenta con operaciones para:
-
-- Crear.
-- Listar.
-- Consultar por ID.
-- Actualizar.
-- Eliminar lógicamente.
-
-La eliminación lógica significa que el registro no se borra físicamente de la base de datos, sino que se marca como inactivo mediante el campo `activo = false`.
-
----
-
-## CRUD de Categorías de medicamento
-
-Endpoint base:
-
-```http
-/api/v1/categorias-medicamento
-```
-
-Operaciones:
-
-```http
-GET    /api/v1/categorias-medicamento
-GET    /api/v1/categorias-medicamento/{id}
-POST   /api/v1/categorias-medicamento
-PUT    /api/v1/categorias-medicamento/{id}
-DELETE /api/v1/categorias-medicamento/{id}
-```
-
-Ejemplo de creación:
-
-```json
-{
-  "nombre": "Antibióticos",
-  "descripcion": "Medicamentos usados para tratar infecciones bacterianas",
-  "activo": true
-}
-```
-
----
-
-## CRUD de Centros de distribución
-
-Endpoint base:
-
-```http
-/api/v1/centros-distribucion
-```
-
-Operaciones:
-
-```http
-GET    /api/v1/centros-distribucion
-GET    /api/v1/centros-distribucion/{id}
-POST   /api/v1/centros-distribucion
-PUT    /api/v1/centros-distribucion/{id}
-DELETE /api/v1/centros-distribucion/{id}
-```
-
-Ejemplo de creación:
-
-```json
-{
-  "codigo": "CD-BOG-001",
-  "nombre": "Centro de Distribución Bogotá",
-  "direccion": "Av. Principal #123",
-  "ciudad": "Bogotá",
-  "activo": true
-}
-```
-
----
-
-## CRUD de Medicamentos
-
-Endpoint base:
-
-```http
-/api/v1/medicamentos
-```
-
-Operaciones:
-
-```http
-GET    /api/v1/medicamentos
-GET    /api/v1/medicamentos/{id}
-POST   /api/v1/medicamentos
-PUT    /api/v1/medicamentos/{id}
-DELETE /api/v1/medicamentos/{id}
-```
-
-Ejemplo de creación:
-
-```json
-{
-  "codigo": "MED-CRUD-001",
-  "nombre": "Acetaminofén 500mg CRUD",
-  "descripcion": "Medicamento creado desde prueba CRUD",
-  "principioActivo": "Paracetamol",
-  "concentracion": "500mg",
-  "presentacion": "Tableta",
-  "unidadMedida": "unidad",
-  "stockMinimo": 20,
-  "stockMaximo": 500,
-  "puntoReorden": 30,
-  "activo": true,
-  "categoriaMedicamentoId": 1
-}
-```
-
-Para crear medicamentos debe existir previamente una categoría.
-
----
-
-## Módulo de inventario
-
-El módulo de inventario permite registrar movimientos de entrada y salida, actualizar stock y consultar Kardex.
-
-Endpoint base:
-
-```http
-/api/v1/movimientos-inventario
-```
-
-Operaciones implementadas:
-
-```http
-POST /api/v1/movimientos-inventario
-GET  /api/v1/movimientos-inventario/{id}
-GET  /api/v1/movimientos-inventario/kardex/inventario/{inventarioId}
-```
-
-### Entrada de inventario
-
-```http
-POST /api/v1/movimientos-inventario
-```
-
-Body de ejemplo:
-
-```json
-{
-  "tipoMovimiento": "ENTRADA",
-  "inventarioId": 1,
-  "loteMedicamentoId": 1,
-  "cantidad": 100,
-  "motivo": "Ingreso inicial de prueba",
-  "observacion": "Prueba de entrada de inventario con JWT",
-  "usuarioResponsable": "Santiago"
-}
-```
-
-La entrada incrementa el stock del inventario y del lote.
-
-### Salida de inventario
-
-```http
-POST /api/v1/movimientos-inventario
-```
-
-Body de ejemplo:
-
-```json
-{
-  "tipoMovimiento": "SALIDA",
-  "inventarioId": 1,
-  "loteMedicamentoId": 1,
-  "cantidad": 75,
-  "motivo": "Salida de prueba",
-  "observacion": "Prueba de salida para validar Kardex y alerta",
-  "usuarioResponsable": "Santiago"
-}
-```
-
-La salida disminuye el stock del inventario y del lote. Si el stock queda por debajo o igual al punto de reorden, se genera una alerta de stock crítico.
-
-### Kardex
-
-```http
-GET /api/v1/movimientos-inventario/kardex/inventario/{inventarioId}
-```
-
-Este endpoint permite consultar el historial de movimientos de inventario.
-
----
-
-## Modelo complementario
-
-También se implementó un modelo base para funcionalidades futuras:
-
-- `Proveedor`
-- `MedicamentoProveedor`
-- `OrdenCompra`
-- `DetalleOrden`
-- `DashboardMetrica`
-
-Este modelo permitirá desarrollar posteriormente:
-
-- Gestión de proveedores.
-- Gestión de órdenes de compra.
-- Dashboard de analítica.
-- Métricas de operación.
-- Abastecimiento predictivo.
-
----
-
-## Manejo global de errores
-
-El proyecto cuenta con `GlobalExceptionHandler` usando `@RestControllerAdvice`.
-
-Esto permite que los errores tengan una respuesta uniforme.
-
-Excepciones customizadas:
-
-```text
-ResourceNotFoundException
-BusinessRuleException
-BadRequestException
-DuplicateResourceException
-UnauthorizedException
-ForbiddenException
-InvalidTokenException
-```
-
-Ejemplo de respuesta de error:
-
-```json
-{
-  "timestamp": "2026-05-20T20:48:00",
-  "status": 400,
-  "error": "Solicitud inválida",
-  "message": "Mensaje del error",
-  "path": "/api/v1/recurso"
-}
-```
-
-También se manejan errores de validación de campos en los DTOs.
-
----
-
-## MapStruct
-
-El proyecto integra MapStruct para apoyar el mapeo entre entidades y DTOs.
-
-Mappers implementados:
-
-```text
-CategoriaMedicamentoMapper
-CentroDistribucionMapper
-MedicamentoMapper
-```
-
-Ubicación:
-
-```text
-src/main/java/com/farmared/opsintelligence/mapper
-```
-
-MapStruct ayuda a separar la transformación de datos de la lógica de negocio y fortalece la arquitectura por capas.
-
----
-
-## Documentación de pruebas
-
-La carpeta `docs` contiene evidencia de pruebas manuales.
-
-Archivos actuales:
-
-```text
-docs/inventory-testing.md
-docs/crud-testing.md
-```
-
-### inventory-testing.md
-
-Incluye pruebas de:
-
-- Registro y login.
-- Uso de token JWT.
-- Entrada de inventario.
-- Salida de inventario.
-- Consulta de Kardex.
-- Validación de stock y alertas.
-
-### crud-testing.md
-
-Incluye pruebas de:
-
-- CRUD de categorías de medicamento.
-- CRUD de centros de distribución.
-- CRUD de medicamentos.
-- Uso de Bearer Token.
-- Validación en PostgreSQL.
-- Validación de endpoints protegidos.
-
----
-
-## Cómo ejecutar el proyecto
-
-### 1. Clonar el repositorio
+Responsabilidad de cada capa:
+
+| Capa | Responsabilidad |
+| --- | --- |
+| `controller` | Expone endpoints REST y respuestas HTTP. |
+| `service` | Define contratos de negocio. |
+| `service.impl` | Implementa reglas de negocio. |
+| `repository` | Acceso a datos con Spring Data JPA. |
+| `entity` | Modelo JPA y relaciones de base de datos. |
+| `dto.request` | Payloads de entrada y validaciones. |
+| `dto.response` | Modelos de salida de la API. |
+| `mapper` | Conversion Entity/DTO con MapStruct. |
+| `security` | JWT, autenticacion y autorizacion. |
+| `config` | Configuracion, CORS y datos demo. |
+
+## Tecnologias
+
+Backend:
+
+- Java 21
+- Spring Boot 3.5.x
+- Spring Web
+- Spring Security
+- JWT con JJWT
+- Spring Data JPA
+- Hibernate
+- MapStruct
+- Lombok
+- PostgreSQL
+- Maven
+- JUnit 5
+- Mockito
+
+Frontend:
+
+- React 18
+- Vite 6
+- Axios
+- React Router
+- Recharts
+- Lucide React
+- CSS propio
+
+Infraestructura:
+
+- Docker
+- Docker Compose
+- PostgreSQL 17 Alpine
+- Nginx para servir el build productivo del frontend
+
+## Ejecucion Con Docker
+
+Forma recomendada:
 
 ```bash
 git clone https://github.com/Arch0102/FarmaRedOps-Intelligence.git
-```
-
-### 2. Entrar al proyecto
-
-```bash
 cd FarmaRedOps-Intelligence
+docker compose up --build
 ```
 
-### 3. Cambiar a la rama de desarrollo
+Servicios disponibles:
+
+| Servicio | URL |
+| --- | --- |
+| Frontend | http://localhost:5173 |
+| Backend | http://localhost:8081 |
+| PostgreSQL Docker | `localhost:5433` |
+
+El frontend se compila con:
+
+```text
+VITE_API_URL=http://localhost:8081/api/v1
+```
+
+La base PostgreSQL se crea en el contenedor y los datos demo se insertan automaticamente al iniciar el backend con el perfil `docker`.
+
+## Comandos Utiles
 
 ```bash
-git checkout dev
-git pull origin dev
+docker compose up --build
+docker compose down
+docker compose down -v
+docker compose logs backend
+docker compose logs frontend
+docker compose ps
 ```
 
-### 4. Configurar variables de entorno
+Usar `docker compose down -v` cuando se quiera eliminar el volumen de PostgreSQL y recargar la base demo desde cero en el siguiente arranque.
+
+## Ejecucion Local Sin Docker
+
+Docker es la forma recomendada porque levanta PostgreSQL, backend, frontend y datos demo con un solo comando.
+
+Para ejecutar el backend localmente sin Docker:
+
+1. Crear una base PostgreSQL llamada `farmared_db`.
+2. Configurar variables de entorno:
 
 ```text
 DB_URL=jdbc:postgresql://localhost:5432/farmared_db
 DB_USER=postgres
-DB_PASSWORD=TU_CONTRASEÑA_REAL
+DB_PASSWORD=tu_password
 SERVER_PORT=8080
 JWT_SECRET=clave_jwt_de_desarrollo_con_minimo_32_caracteres
 JWT_EXPIRATION_MS=3600000
 ```
 
-### 5. Compilar
-
-En Windows PowerShell:
-
-```powershell
-.\mvnw.cmd compile
-```
-
-En Linux o macOS:
-
-```bash
-./mvnw compile
-```
-
-### 6. Ejecutar
-
-En Windows PowerShell:
+3. Iniciar el backend:
 
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
 
-También puede ejecutarse desde IntelliJ usando la clase principal:
+4. Iniciar el frontend:
 
-```text
-FarmaRedOpsIntelligenceApplication
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
----
-## Funcionalidades pendientes
+Para desarrollo local con Vite, conservar en `frontend/.env`:
 
-Para próximas fases quedan pendientes:
+```text
+VITE_API_BASE_URL=http://localhost:8081/api/v1
+```
 
-- Servicios y controladores completos para órdenes de compra.
-- Dashboard de analíticas.
-- Reportes y generación de PDF.
-- Subida y descarga de documentos.
-- Dockerización.
-- Pruebas automatizadas.
-- Swagger/OpenAPI.
-- Permisos específicos por roles.
-- Frontend en React.
+## Endpoints Principales
 
----
+Autenticacion:
 
-## Elevadores del proyecto
+| Metodo | Endpoint |
+| --- | --- |
+| `POST` | `/api/v1/auth/login` |
+| `POST` | `/api/v1/auth/register` |
 
-Los elevadores definidos para el proyecto son:
+Catalogos:
 
-1. Dashboard de analíticas.
-2. Generación y gestión de PDF.
-3. Dockerización.
-4. Frontend en React.
+| Metodo | Endpoint |
+| --- | --- |
+| `GET` | `/api/v1/medicamentos` |
+| `GET` | `/api/v1/medicamentos/{id}` |
+| `POST` | `/api/v1/medicamentos` |
+| `PUT` | `/api/v1/medicamentos/{id}` |
+| `DELETE` | `/api/v1/medicamentos/{id}` |
+| `GET` | `/api/v1/categorias-medicamento` |
+| `GET` | `/api/v1/centros-distribucion` |
 
-El frontend se dejará para una fase posterior, cuando el backend esté más estable y los endpoints principales estén definidos y probados.
+Inventario y Kardex:
 
----
+| Metodo | Endpoint |
+| --- | --- |
+| `GET` | `/api/v1/inventarios` |
+| `GET` | `/api/v1/inventarios/resumen` |
+| `GET` | `/api/v1/inventarios/{id}` |
+| `POST` | `/api/v1/movimientos-inventario` |
+| `GET` | `/api/v1/movimientos-inventario/{id}` |
+| `GET` | `/api/v1/movimientos-inventario/kardex/inventario/{inventarioId}` |
 
-## Estado para la segunda entrega
+Dashboard y alertas:
 
-El proyecto cuenta actualmente con:
+| Metodo | Endpoint |
+| --- | --- |
+| `GET` | `/api/v1/dashboard/resumen` |
+| `GET` | `/api/v1/dashboard/metricas` |
+| `GET` | `/api/v1/dashboard/metricas/tipo/{tipoMetrica}` |
+| `POST` | `/api/v1/dashboard/metricas/recalcular` |
+| `GET` | `/api/v1/alertas-stock` |
+| `PATCH` | `/api/v1/alertas-stock/{id}/resolver` |
 
-- API REST funcional.
-- CRUD mínimo de tres entidades.
-- Seguridad con JWT.
-- PostgreSQL.
-- Arquitectura por capas.
-- DTOs.
-- MapStruct.
-- Manejo global de errores.
-- Documentación de pruebas.
-- Trabajo colaborativo con Git y Pull Requests.
+Compras y documentos:
 
+| Metodo | Endpoint |
+| --- | --- |
+| `GET` | `/api/v1/proveedores` |
+| `GET` | `/api/v1/proveedores/activos` |
+| `POST` | `/api/v1/proveedores` |
+| `GET` | `/api/v1/ordenes-compra` |
+| `GET` | `/api/v1/ordenes-compra/estado/{estado}` |
+| `POST` | `/api/v1/ordenes-compra` |
+| `PATCH` | `/api/v1/ordenes-compra/{id}/estado/{nuevoEstado}` |
+| `GET` | `/api/v1/documentos` |
+| `POST` | `/api/v1/documentos/upload` |
+| `GET` | `/api/v1/documentos/{id}/download` |
+| `POST` | `/api/v1/documentos/generar/dashboard` |
+
+## Pruebas
+
+Ejecutar:
+
+```powershell
+.\mvnw.cmd test
+```
+
+Las pruebas unitarias cubren:
+
+- `AuthServiceImpl`: registro, cifrado de password, asignacion del rol por defecto, username duplicado y login con token.
+- `CentroDistribucionServiceImpl`: creacion, actualizacion, eliminacion logica y recurso no encontrado.
+- `DashboardMetricaServiceImpl`: recalculo de metricas, listas vacias, filas nulas, medicamentos proximos a agotarse y tipos validos de alerta.
+- `AlertaStockServiceImpl`: generacion de alertas, no duplicar alertas pendientes y evaluacion de inventarios.
+
+Las pruebas usan JUnit 5 y Mockito. No requieren PostgreSQL, Docker ni contexto Spring.
+
+## Evidencia De Calidad
+
+- Arquitectura por capas con controller, service, repository, entity, DTO y mapper.
+- Autenticacion JWT y seguridad por roles.
+- Validacion de DTOs con Jakarta Validation.
+- Mappers MapStruct.
+- Respuestas normalizadas con `ApiResponse` donde aplica.
+- Manejo global de excepciones con errores personalizados.
+- Docker full stack para PostgreSQL, backend y frontend.
+- Frontend productivo servido con Nginx.
+- Datos demo automaticos.
+- Pruebas unitarias para logica critica de servicios.
+
+## Equipo
+
+- Santiago
+- Mancera
+- Juan
+- Cardona
